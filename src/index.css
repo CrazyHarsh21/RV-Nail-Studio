@@ -1,0 +1,239 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-serif: 'Cormorant Garamond', Georgia, serif;
+    --font-display: 'Playfair Display', Georgia, serif;
+    --font-script: 'Alex Brush', cursive;
+    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: #FAF8F5;
+    color: #1C1917;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, .font-serif {
+    font-family: var(--font-serif);
+  }
+
+  .font-display {
+    font-family: var(--font-display);
+  }
+
+  .font-script {
+    font-family: var(--font-script);
+  }
+
+  /* Animated Sculpted Nail Art Aesthetic Scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #F5EFEB;
+    border-left: 1px solid rgba(0, 0, 0, 0.05);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #E8A598 0%, #D4AF37 40%, #A78BFA 70%, #6EE7B7 100%);
+    border-radius: 9999px 9999px 4px 4px;
+    border: 2px solid #F5EFEB;
+    box-shadow: 0 0 8px rgba(212, 175, 55, 0.35);
+    transition: all 0.3s ease;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #F43F5E 0%, #F59E0B 35%, #8B5CF6 70%, #10B981 100%);
+    box-shadow: 0 0 14px rgba(232, 165, 152, 0.6);
+  }
+
+  /* Desktop custom nail cursor hide default cursor */
+  @media (pointer: fine) {
+    body, a, button, select, input, textarea {
+      cursor: default;
+    }
+  }
+}
+
+/* Custom Nail Art Inspired Shapes */
+.nail-tip-card {
+  border-radius: 48px 48px 16px 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.nail-tip-card-inner {
+  border-radius: 42px 42px 12px 12px;
+}
+
+.nail-bottle-card {
+  border-radius: 28px 28px 20px 20px;
+  position: relative;
+}
+
+/* Gloss reflection specular sweep */
+.gloss-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.28) 48%,
+    rgba(229, 196, 120, 0.45) 51%,
+    transparent 62%
+  );
+  transform: translateX(-160%) skewX(-20deg);
+  transition: transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.group:hover .gloss-overlay,
+.nail-active .gloss-overlay {
+  transform: translateX(180%) skewX(-20deg);
+}
+
+/* Continuous luxury gentle gloss shine */
+@keyframes specularSweep {
+  0% {
+    transform: translateX(-180%) skewX(-25deg);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(220%) skewX(-25deg);
+    opacity: 0;
+  }
+}
+
+.animate-specular {
+  animation: specularSweep 4.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Gold glow pulse */
+@keyframes goldPulse {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.2), inset 0 0 10px rgba(212, 175, 55, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(212, 175, 55, 0.45), inset 0 0 18px rgba(229, 196, 120, 0.25);
+  }
+}
+
+.gold-glow-hover:hover {
+  animation: goldPulse 2s ease-in-out infinite;
+}
+
+/* Realistic artificial nail tip highlights */
+.nail-specular-highlight {
+  position: absolute;
+  top: 10%;
+  left: 12%;
+  width: 14%;
+  height: 60%;
+  border-radius: 9999px;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0.05));
+  filter: blur(1px);
+  pointer-events: none;
+}
+
+.nail-center-glow {
+  position: absolute;
+  top: 2%;
+  left: 20%;
+  right: 20%;
+  height: 25%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.35) 0%, transparent 70%);
+  filter: blur(2px);
+  pointer-events: none;
+}
+
+/* Prismatic Rainbow Gradients & Animations */
+@keyframes rainbowFlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.text-rainbow-chrome {
+  background: linear-gradient(
+    90deg,
+    #FF3366 0%,
+    #FF8833 18%,
+    #FFD700 36%,
+    #00FF88 52%,
+    #00CCFF 70%,
+    #9933FF 85%,
+    #FF3366 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: rainbowFlow 6s linear infinite;
+}
+
+.bg-rainbow-chrome {
+  background: linear-gradient(
+    90deg,
+    #FF3366 0%,
+    #FF8833 18%,
+    #FFD700 36%,
+    #00FF88 52%,
+    #00CCFF 70%,
+    #9933FF 85%,
+    #FF3366 100%
+  );
+  background-size: 200% auto;
+  animation: rainbowFlow 6s linear infinite;
+}
+
+.border-rainbow-shimmer {
+  border-image: linear-gradient(
+    90deg,
+    #FF3366,
+    #FFD700,
+    #00FF88,
+    #00CCFF,
+    #9933FF,
+    #FF3366
+  ) 1;
+}
+
+.rainbow-card-glow {
+  position: relative;
+}
+
+.rainbow-card-glow::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 51, 102, 0.4),
+    rgba(255, 215, 0, 0.3),
+    rgba(0, 255, 136, 0.3),
+    rgba(0, 204, 255, 0.4),
+    rgba(153, 51, 255, 0.4)
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+

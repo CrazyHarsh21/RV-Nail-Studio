@@ -1,0 +1,37 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Appointments collection
+    match /appointments/{appointmentId} {
+      // Allow any guest or user to create an appointment request
+      allow create: if request.resource.data.fullName is string
+                    && request.resource.data.phone is string
+                    && request.resource.data.date is string
+                    && request.resource.data.service is string;
+      
+      // Allow reading appointments (needed for admin dashboard and client verification)
+      allow read: if true;
+
+      // Allow updating and deleting appointments
+      allow update, delete: if true;
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if true;
+      allow create, update: if isAuthenticated() && request.auth.uid == userId;
+      allow delete: if isAuthenticated() && request.auth.uid == userId;
+    }
+  }
+}

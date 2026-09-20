@@ -1,0 +1,6 @@
+{
+  "name": "RV Nails Art by Rohit",
+  "description": "Luxury nail-art studio & doorstep home service by Rohit. Bespoke sculpted nail designs, extensions, chrome glazes, Russian manicures, and bridal nail art with aesthetic color artistry.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

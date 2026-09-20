@@ -1,0 +1,42 @@
+{
+  "entities": {
+    "appointments": {
+      "title": "Appointments",
+      "description": "Customer salon appointments and doorstep nail service bookings",
+      "type": "object",
+      "properties": {
+        "bookingCode": { "type": "string", "description": "Unique booking reference code (e.g. RV-1048)" },
+        "fullName": { "type": "string", "description": "Customer full name" },
+        "phone": { "type": "string", "description": "Indian contact phone number" },
+        "email": { "type": "string", "description": "Optional email address" },
+        "userId": { "type": "string", "description": "Authenticated user ID if signed in" },
+        "service": { "type": "string", "description": "Selected nail art or manicure service" },
+        "serviceType": { "type": "string", "enum": ["Studio Visit", "Home Service"], "description": "Type of service location" },
+        "address": { "type": "string", "description": "Doorstep address if home service" },
+        "date": { "type": "string", "description": "Appointment date (YYYY-MM-DD)" },
+        "timeSlot": { "type": "string", "description": "Selected appointment time slot" },
+        "notes": { "type": "string", "description": "Special nail design requests or preferences" },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "in_progress", "completed", "cancelled"], "description": "Booking status" },
+        "amount": { "type": "number", "description": "Price/estimated service total in INR" },
+        "paymentStatus": { "type": "string", "enum": ["unpaid", "deposit_paid", "paid"], "description": "Payment status" },
+        "createdAt": { "type": "string", "description": "Creation timestamp" },
+        "updatedAt": { "type": "string", "description": "Last update timestamp" }
+      },
+      "required": ["bookingCode", "fullName", "phone", "service", "serviceType", "date", "timeSlot", "status", "createdAt"]
+    },
+    "users": {
+      "title": "Users",
+      "description": "Registered clients and administrators",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "email": { "type": "string", "description": "User email address" },
+        "displayName": { "type": "string", "description": "Display name" },
+        "phone": { "type": "string", "description": "Phone number" },
+        "role": { "type": "string", "enum": ["client", "admin"], "description": "User access role" },
+        "createdAt": { "type": "string", "description": "Account registration timestamp" }
+      },
+      "required": ["uid", "role", "createdAt"]
+    }
+  }
+}
