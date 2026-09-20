@@ -57,7 +57,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const [searchQuery, setSearchQuery] = useState('');
   const [clientSearchQuery, setClientSearchQuery] = useState('');
-  const [selectedDateFilter, setSelectedDateFilter] = useState<'today' | 'tomorrow' | 'month' | 'all' | 'custom'>('today');
+  const [selectedDateFilter, setSelectedDateFilter] = useState<'today' | 'tomorrow' | 'month' | 'all' | 'custom'>('all');
   const [customDate, setCustomDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [serviceTypeFilter, setServiceTypeFilter] = useState<string>('all');
@@ -282,6 +282,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Overall Business Metrics (Progress Report & Monthly Totals)
   const metrics = useMemo(() => {
     const todayList = appointments.filter((a) => a.date === todayStr);
+    const tomorrowList = appointments.filter((a) => a.date === tomorrowStr);
     const todayCompleted = todayList.filter((a) => a.status === 'completed').length;
     const todayPending = todayList.filter((a) => a.status === 'pending').length;
 
@@ -303,6 +304,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
     return {
       todayCount: todayList.length,
+      tomorrowCount: tomorrowList.length,
       todayCompleted,
       todayPending,
       todayCompletionRate: todayList.length ? Math.round((todayCompleted / todayList.length) * 100) : 0,
@@ -318,7 +320,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       uniqueClientsCount: clientsDirectory.length,
       vipClientsCount
     };
-  }, [appointments, todayStr, currentYearMonth, clientsDirectory]);
+  }, [appointments, todayStr, tomorrowStr, currentYearMonth, clientsDirectory]);
 
   // Handle status update in Firestore
   const handleStatusChange = async (id: string, newStatus: AppointmentStatus) => {
@@ -752,12 +754,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   {/* Date Filter Buttons */}
                   <div className="flex items-center gap-1 bg-[#FAF5F0] p-1 rounded-xl border border-[#E7DFD5] overflow-x-auto">
                     <button
+                      onClick={() => setSelectedDateFilter('all')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                        selectedDateFilter === 'all' ? 'bg-white text-[#B45309] shadow-xs' : 'text-[#78716C] hover:text-[#1C1917]'
+                      }`}
+                    >
+                      All ({appointments.length})
+                    </button>
+                    <button
                       onClick={() => setSelectedDateFilter('today')}
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                         selectedDateFilter === 'today' ? 'bg-white text-[#B45309] shadow-xs' : 'text-[#78716C] hover:text-[#1C1917]'
                       }`}
                     >
-                      Today
+                      Today ({metrics.todayCount})
                     </button>
                     <button
                       onClick={() => setSelectedDateFilter('tomorrow')}
@@ -765,7 +775,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         selectedDateFilter === 'tomorrow' ? 'bg-white text-[#B45309] shadow-xs' : 'text-[#78716C] hover:text-[#1C1917]'
                       }`}
                     >
-                      Tomorrow
+                      Tomorrow ({metrics.tomorrowCount})
                     </button>
                     <button
                       onClick={() => setSelectedDateFilter('month')}
@@ -774,14 +784,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       }`}
                     >
                       This Month
-                    </button>
-                    <button
-                      onClick={() => setSelectedDateFilter('all')}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                        selectedDateFilter === 'all' ? 'bg-white text-[#B45309] shadow-xs' : 'text-[#78716C] hover:text-[#1C1917]'
-                      }`}
-                    >
-                      All
                     </button>
                   </div>
 

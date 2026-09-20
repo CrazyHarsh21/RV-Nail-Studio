@@ -10,7 +10,7 @@ import {
   updateProfile
 } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
-import { auth, db, googleProvider, isUserAdmin, setAdminModeOverride } from '../lib/firebase';
+import { auth, db, googleProvider, isUserAdmin, setAdminModeOverride, linkAppointmentsToUser } from '../lib/firebase';
 
 interface AuthContextType {
   user: User | null;
@@ -43,6 +43,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(currentUser);
       setIsAdmin(isUserAdmin(currentUser));
       setLoading(false);
+      if (currentUser) {
+        linkAppointmentsToUser(currentUser);
+      }
     });
 
     return () => unsubscribe();
@@ -55,6 +58,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const adminCheck = isUserAdmin(res.user);
     setIsAdmin(adminCheck);
     setAdminModeOverride(adminCheck);
+    await linkAppointmentsToUser(res.user);
   };
 
   // Real-World Client Account Registration
@@ -83,6 +87,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setAdminModeOverride(false);
     setIsAdmin(false);
     setUser(res.user);
+    await linkAppointmentsToUser(res.user);
   };
 
   // Password recovery via Firebase email
@@ -255,6 +260,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const adminCheck = isUserAdmin(res.user);
       setIsAdmin(adminCheck);
       setAdminModeOverride(adminCheck);
+      await linkAppointmentsToUser(res.user);
     } catch (err) {
       console.error('Google sign-in error:', err);
       throw err;

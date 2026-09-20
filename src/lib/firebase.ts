@@ -65,6 +65,19 @@ export const googleProvider = new GoogleAuthProvider();
 // LocalStorage Fallback Key
 const LOCAL_STORAGE_KEY = 'rv_nails_appointments_store';
 
+// Helper to sanitize data for Firestore (Firestore strictly rejects undefined values)
+export const cleanObjectForFirestore = <T extends Record<string, any>>(obj: T): Record<string, any> => {
+  const clean: Record<string, any> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined) {
+      clean[key] = value;
+    } else {
+      clean[key] = '';
+    }
+  }
+  return clean;
+};
+
 // Helper to get local appointments
 export const getLocalAppointments = (): Appointment[] => {
   try {
@@ -226,15 +239,15 @@ export const bookAppointmentInDatabase = async (
     bookingCode,
     fullName: formData.fullName.trim(),
     phone: formData.phone.trim(),
-    email: formData.email?.trim() || user?.email || undefined,
-    userId: user?.uid,
+    email: formData.email?.trim() || user?.email || '',
+    userId: user?.uid || '',
     date: formData.date,
     timeSlot: formData.timeSlot,
     service: formData.service,
     serviceType: formData.serviceType,
-    address: formData.address?.trim(),
-    nailDesign: formData.nailDesign,
-    notes: formData.notes?.trim(),
+    address: formData.address?.trim() || '',
+    nailDesign: formData.nailDesign?.trim() || '',
+    notes: formData.notes?.trim() || '',
     status: 'pending',
     amount: estimatedAmount,
     paymentStatus: 'unpaid',
@@ -260,6 +273,9 @@ export const bookAppointmentInDatabase = async (
       localStorage.setItem('rv_my_booking_codes', JSON.stringify(existingCodes));
     }
     localStorage.setItem('rv_my_last_phone', newAppointment.phone);
+    if (newAppointment.email) {
+      localStorage.setItem('rv_my_last_email', newAppointment.email);
+    }
   } catch {
     // ignore
   }
@@ -267,12 +283,13 @@ export const bookAppointmentInDatabase = async (
   // 3. Immediately notify active in-app subscribers so UI updates instantly
   notifySubscribers(updatedList);
 
-  // 4. Persist to Firestore
+  // 4. Persist to Firestore with sanitized payload (strictly no undefined)
   try {
     const docRef = doc(db, 'appointments', id);
-    await setDoc(docRef, newAppointment);
+    await setDoc(docRef, cleanObjectForFirestore(newAppointment));
+    console.log('[Firestore] Successfully stored appointment:', id);
   } catch (err) {
-    console.warn('Firestore write warning (retained in offline store):', err);
+    console.error('[Firestore] Write error (retained in offline store):', err);
   }
 
   return newAppointment;
@@ -315,6 +332,14 @@ export const getMyLastPhone = (): string => {
   }
 };
 
+export const getMyLastEmail = (): string => {
+  try {
+    return localStorage.getItem('rv_my_last_email') || '';
+  } catch {
+    return '';
+  }
+};
+
 export const recordManualBookingId = (id: string, code?: string) => {
   try {
     const existingIds = getMyBookedIds();
@@ -331,6 +356,59 @@ export const recordManualBookingId = (id: string, code?: string) => {
     }
   } catch {
     // ignore
+  }
+};
+
+/**
+ * Automatically links unassigned device bookings to newly signed-in or signed-up user
+ */
+export const linkAppointmentsToUser = async (user: User | null): Promise<void> => {
+  if (!user) return;
+  try {
+    const localList = getLocalAppointments();
+    const myIds = getMyBookedIds();
+    const myCodes = getMyBookedCodes();
+    const myLastPhone = getMyLastPhone().replace(/\D/g, '');
+    const userPhone = user.phoneNumber ? user.phoneNumber.replace(/\D/g, '') : '';
+    const userEmail = user.email ? user.email.toLowerCase().trim() : '';
+
+    let hasUpdates = false;
+    const updatedList = localList.map((apt) => {
+      const aptPhone = (apt.phone || '').replace(/\D/g, '');
+      const aptEmail = (apt.email || '').toLowerCase().trim();
+
+      const isBelongingToUser =
+        myIds.includes(apt.id) ||
+        (apt.bookingCode && myCodes.includes(apt.bookingCode)) ||
+        (userEmail && aptEmail === userEmail) ||
+        (userPhone && aptPhone && (aptPhone.endsWith(userPhone) || userPhone.endsWith(aptPhone))) ||
+        (myLastPhone && aptPhone && (aptPhone.endsWith(myLastPhone) || myLastPhone.endsWith(aptPhone)));
+
+      if (isBelongingToUser && (!apt.userId || apt.userId !== user.uid || !apt.email)) {
+        hasUpdates = true;
+        const linkedApt: Appointment = {
+          ...apt,
+          userId: user.uid,
+          email: apt.email || user.email || '',
+          updatedAt: new Date().toISOString()
+        };
+
+        // Sync update to Firestore
+        setDoc(doc(db, 'appointments', apt.id), cleanObjectForFirestore(linkedApt), { merge: true }).catch((err) => {
+          console.warn('[Firestore] Could not sync linked appointment:', err);
+        });
+
+        return linkedApt;
+      }
+      return apt;
+    });
+
+    if (hasUpdates) {
+      saveLocalAppointments(updatedList);
+      notifySubscribers(updatedList);
+    }
+  } catch (err) {
+    console.error('Error in linkAppointmentsToUser:', err);
   }
 };
 
@@ -363,10 +441,11 @@ export const subscribeToAppointments = (
 
           // Remote is source of truth
           remoteList.forEach((apt) => mergedMap.set(apt.id, apt));
-          // Keep local if not yet synced
+          // Keep local if not yet synced, and push to Firestore
           localList.forEach((apt) => {
             if (!mergedMap.has(apt.id)) {
               mergedMap.set(apt.id, apt);
+              setDoc(doc(db, 'appointments', apt.id), cleanObjectForFirestore(apt)).catch(() => {});
             }
           });
 
@@ -431,10 +510,11 @@ export const updateAppointmentInDatabase = async (
 
   try {
     const docRef = doc(db, 'appointments', id);
-    await updateDoc(docRef, {
+    const cleanUpdates = cleanObjectForFirestore({
       ...updates,
       updatedAt: new Date().toISOString()
     });
+    await updateDoc(docRef, cleanUpdates);
   } catch (err) {
     console.warn('Firestore update warning (retained in offline store):', err);
   }

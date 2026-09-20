@@ -21,7 +21,7 @@ import {
 import { Appointment } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { BRAND_PHONE, getWhatsAppUrl } from '../data/nailData';
-import { getMyBookedIds, getMyBookedCodes, getMyLastPhone, recordManualBookingId } from '../lib/firebase';
+import { getMyBookedIds, getMyBookedCodes, getMyLastPhone, getMyLastEmail, recordManualBookingId } from '../lib/firebase';
 
 interface UserBookingsModalProps {
   isOpen: boolean;
@@ -45,6 +45,7 @@ export const UserBookingsModal: React.FC<UserBookingsModalProps> = ({
   const localBookedIds = getMyBookedIds();
   const localBookedCodes = getMyBookedCodes();
   const lastPhone = getMyLastPhone().replace(/\D/g, '');
+  const lastEmail = getMyLastEmail().toLowerCase().trim();
 
   const userPhoneClean = (user as any)?.phoneNumber ? (user as any).phoneNumber.replace(/\D/g, '') : '';
   const userEmailClean = user?.email?.toLowerCase().trim() || '';
@@ -63,6 +64,7 @@ export const UserBookingsModal: React.FC<UserBookingsModalProps> = ({
 
       // 4. Matched by user email
       if (userEmailClean && apt.email && apt.email.toLowerCase().trim() === userEmailClean) return true;
+      if (lastEmail && apt.email && apt.email.toLowerCase().trim() === lastEmail) return true;
 
       // 5. Matched by clean phone number
       const aptPhoneClean = apt.phone ? apt.phone.replace(/\D/g, '') : '';
@@ -77,7 +79,7 @@ export const UserBookingsModal: React.FC<UserBookingsModalProps> = ({
     });
 
     return matched;
-  }, [appointments, localBookedIds, localBookedCodes, user, userEmailClean, userPhoneClean, lastPhone]);
+  }, [appointments, localBookedIds, localBookedCodes, user, userEmailClean, userPhoneClean, lastPhone, lastEmail]);
 
   // Handle Search / Filter
   const filteredAppointments = useMemo(() => {
@@ -93,9 +95,10 @@ export const UserBookingsModal: React.FC<UserBookingsModalProps> = ({
       const codeMatch = apt.bookingCode?.toLowerCase().includes(q);
       const nameMatch = apt.fullName?.toLowerCase().includes(q);
       const cleanPhone = apt.phone?.replace(/\D/g, '') || '';
-      const phoneMatch = cleanQ.length >= 3 && cleanPhone.includes(cleanQ);
+      const phoneMatch = cleanQ.length >= 4 && (cleanPhone.includes(cleanQ) || cleanQ.includes(cleanPhone));
+      const emailMatch = apt.email?.toLowerCase().includes(q);
       const serviceMatch = apt.service?.toLowerCase().includes(q);
-      return codeMatch || nameMatch || phoneMatch || serviceMatch;
+      return codeMatch || nameMatch || phoneMatch || emailMatch || serviceMatch;
     });
   }, [searchQuery, userAppointments, appointments]);
 
@@ -107,8 +110,20 @@ export const UserBookingsModal: React.FC<UserBookingsModalProps> = ({
 
   const handleManualLookup = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!lookupPhone.trim()) return;
-    setSearchQuery(lookupPhone.trim());
+    const query = lookupPhone.trim();
+    if (!query) return;
+    setSearchQuery(query);
+
+    // Auto-remember matched bookings on this device
+    const cleanLookup = query.toLowerCase().replace(/\D/g, '');
+    appointments.forEach((apt) => {
+      const cleanPhone = (apt.phone || '').replace(/\D/g, '');
+      const codeMatch = apt.bookingCode?.toLowerCase() === query.toLowerCase();
+      const phoneMatch = cleanLookup.length >= 5 && (cleanPhone.endsWith(cleanLookup) || cleanLookup.endsWith(cleanPhone));
+      if (codeMatch || phoneMatch) {
+        recordManualBookingId(apt.id, apt.bookingCode);
+      }
+    });
   };
 
   const getStatusBadge = (status: Appointment['status']) => {
