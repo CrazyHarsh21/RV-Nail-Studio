@@ -197,13 +197,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setShowGooglePrompt(true);
       if (!googleEmailInput) {
         if (email && email.includes('@')) {
-          setGoogleEmailInput(email);
+          setGoogleEmailInput(email.trim());
         } else {
-          setGoogleEmailInput('harshksltc1221@gmail.com');
+          setGoogleEmailInput('');
         }
       }
       if (!googleNameInput && name) {
-        setGoogleNameInput(name);
+        setGoogleNameInput(name.trim());
       }
     } finally {
       setGoogleLoading(false);

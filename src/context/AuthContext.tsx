@@ -102,7 +102,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
-        setIsAdmin(isUserAdmin(currentUser));
+        const adminStatus = isUserAdmin(currentUser);
+        setIsAdmin(adminStatus);
+        if (!adminStatus) {
+          setAdminModeOverride(false);
+          try {
+            localStorage.removeItem('rv_active_admin_session');
+            localStorage.removeItem('rv_is_admin_mode');
+          } catch {}
+        }
         setLoading(false);
         await linkAppointmentsToUser(currentUser);
         await fetchUserPastBookingsFromFirestore(currentUser.uid, currentUser.email || undefined);
@@ -114,7 +122,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const parsed = JSON.parse(savedActive);
             const fallbackUser = createMockUser(parsed.uid, parsed.email, parsed.displayName, parsed.phone);
             setUser(fallbackUser);
-            setIsAdmin(isUserAdmin(fallbackUser));
+            const adminStatus = isUserAdmin(fallbackUser);
+            setIsAdmin(adminStatus);
+            if (!adminStatus) {
+              setAdminModeOverride(false);
+              try {
+                localStorage.removeItem('rv_active_admin_session');
+                localStorage.removeItem('rv_is_admin_mode');
+              } catch {}
+            }
             await linkAppointmentsToUser(fallbackUser);
             await fetchUserPastBookingsFromFirestore(fallbackUser.uid, fallbackUser.email || undefined);
           } else {
@@ -220,6 +236,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const adminCheck = isUserAdmin(authenticatedUser);
       setIsAdmin(adminCheck);
       setAdminModeOverride(adminCheck);
+      if (!adminCheck) {
+        try {
+          localStorage.removeItem('rv_active_admin_session');
+          localStorage.removeItem('rv_is_admin_mode');
+        } catch {}
+      }
       await linkAppointmentsToUser(authenticatedUser);
       await fetchUserPastBookingsFromFirestore(authenticatedUser.uid, authenticatedUser.email || undefined);
     }
@@ -443,7 +465,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const isValidAdmin = 
       (cleanId === 'rohit@rvnails.com' && (cleanPass === 'rvadmin2026' || cleanPass === 'rvadmin' || cleanPass === 'Rohit@123')) ||
       (cleanId === 'admin@rvnails.com' && (cleanPass === 'rvadmin2026' || cleanPass === 'rvadmin')) ||
-      (cleanId === 'harshksltc1221@gmail.com' && (cleanPass === 'rvadmin2026' || cleanPass === 'rvadmin')) ||
+      (cleanId === 'rvnailsart@gmail.com' && (cleanPass === 'rvadmin2026' || cleanPass === 'rvadmin')) ||
       (cleanId === 'admin' && (cleanPass === 'rvadmin2026' || cleanPass === 'rvadmin')) ||
       (cleanPass === 'rvadmin2026' || cleanPass === 'rvadmin');
 
@@ -476,6 +498,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const adminCheck = isUserAdmin(res.user);
       setIsAdmin(adminCheck);
       setAdminModeOverride(adminCheck);
+      if (!adminCheck) {
+        try {
+          localStorage.removeItem('rv_active_admin_session');
+          localStorage.removeItem('rv_is_admin_mode');
+        } catch {}
+      }
 
       // Save Google user profile to Firestore database
       await saveUserProfileToFirestore({
@@ -554,6 +582,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const adminCheck = isUserAdmin(mockGoogleUser);
     setIsAdmin(adminCheck);
     setAdminModeOverride(adminCheck);
+    if (!adminCheck) {
+      try {
+        localStorage.removeItem('rv_active_admin_session');
+        localStorage.removeItem('rv_is_admin_mode');
+      } catch {}
+    }
 
     // Link any guest bookings made with this email
     await linkAppointmentsToUser(mockGoogleUser);

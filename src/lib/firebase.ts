@@ -30,7 +30,7 @@ import { Appointment, AppointmentFormData, AppointmentStatus, PaymentStatus, Use
 
 // Price lookup dictionary for services (in INR ₹)
 export const SERVICE_PRICES: Record<string, number> = {
-  'Manicure & Pedicure': 899,
+  'Chrome Glaze & Aura Finish': 1299,
   'Nail Art & Design': 1499,
   'Nail Extensions (Gel / Acrylic)': 2299,
   'Bridal Nails & Special Occasions': 3499,
@@ -190,11 +190,11 @@ const SEED_APPOINTMENTS: Appointment[] = [
     email: 'meera.n@gmail.com',
     date: new Date(Date.now() - 86400000).toISOString().split('T')[0], // Yesterday
     timeSlot: '3:30 PM',
-    service: 'Manicure & Pedicure',
+    service: 'Chrome Glaze & Aura Finish',
     serviceType: 'Studio Visit',
-    notes: 'Russian dry manicure technique requested.',
+    notes: 'Hailey Bieber glazed donut chrome finish requested.',
     status: 'completed',
-    amount: 899,
+    amount: 1299,
     paymentStatus: 'paid',
     createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
     adminNotes: 'Completed smoothly. Left 5-star review.'
@@ -717,10 +717,10 @@ export const deleteAppointmentFromDatabase = async (id: string): Promise<void> =
 };
 
 // Admin authentication helpers
+// Admin authentication helpers - strictly authorized salon management only
 const ADMIN_EMAILS = [
   'rohit@rvnails.com', 
   'admin@rvnails.com', 
-  'harshksltc1221@gmail.com',
   'rvnailsart@gmail.com'
 ];
 const ADMIN_STORAGE_KEY = 'rv_is_admin_mode';
@@ -731,17 +731,19 @@ export const isUserAdmin = (user: User | null): boolean => {
     return false;
   }
   
-  // 1. Check if authenticated email matches authorized admin emails
-  if (user.email && ADMIN_EMAILS.includes(user.email.toLowerCase().trim())) {
+  const userEmail = user.email ? user.email.toLowerCase().trim() : '';
+
+  // 1. Check if authenticated email matches strictly authorized salon admin emails
+  if (userEmail && ADMIN_EMAILS.includes(userEmail)) {
     return true;
   }
 
-  // 2. Check if active session is an authorized Admin UID with valid local key
-  if (user.uid.startsWith('admin-') && localStorage.getItem(ADMIN_STORAGE_KEY) === 'true') {
+  // 2. Check if active session is an authorized Admin UID with verified admin session
+  if (user.uid.startsWith('admin-') && localStorage.getItem('rv_active_admin_session') === 'true') {
     return true;
   }
 
-  // All other clients, anonymous users, and phone logins are NOT admin
+  // All regular client accounts, Google sign-ins, and visitor logins are strictly NOT admin
   return false;
 };
 

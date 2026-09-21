@@ -96,7 +96,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking }) => {
               transition={{ duration: 0.8, delay: 0.7 }}
               className="text-sm sm:text-base md:text-lg text-[#57534E] font-light leading-relaxed mb-6 max-w-xl"
             >
-              Handcrafted acrylic extensions, Russian cuticle manicure, chrome glazing, and bridal nail couture customized to your style by master nail artist <span className="font-serif italic font-bold text-[#92400E]">Rohit</span>.
+              Handcrafted acrylic extensions, liquid chrome glazing, bespoke 3D nail art, and bridal nail couture customized to your style by master nail artist <span className="font-serif italic font-bold text-[#92400E]">Rohit</span>.
             </motion.p>
 
             {/* Aesthetic Finish Chips */}

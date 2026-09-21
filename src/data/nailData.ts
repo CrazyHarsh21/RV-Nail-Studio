@@ -2,11 +2,13 @@ import { NailDesign, ServiceItem } from '../types';
 
 export const BRAND_PHONE = '6397449307';
 export const BRAND_PHONE_INTL = '916397449307';
-export const BRAND_INSTAGRAM = 'rv.nails_art_by_rohit';
-export const BRAND_INSTAGRAM_URL = 'https://www.instagram.com/rv.nails_art_by_rohit';
+export const BRAND_INSTAGRAM = 'rv.nails_studio';
+export const BRAND_INSTAGRAM_URL = 'https://www.instagram.com/rv.nails_studio?utm_source=ig_web_button_share_sheet&stkn=ZDNlZDc0MzIxNw==';
+export const BRAND_ADDRESS = 'L-137/17, near by LAXMI HANDLOOM, Block K, Jagat Ram Park, Laxmi Nagar, Delhi, 110092';
+export const BRAND_MAPS_URL = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent('L-137/17, near by LAXMI HANDLOOM, Block K, Jagat Ram Park, Laxmi Nagar, Delhi, 110092');
 
 export function getWhatsAppUrl(customMessage?: string): string {
-  const defaultMsg = 'Hi RV Nails Art by Rohit, I would like to book a nail appointment.';
+  const defaultMsg = 'Hi RV Nails Studio by Rohit, I would like to book a nail appointment.';
   const message = customMessage || defaultMsg;
   return `https://wa.me/${BRAND_PHONE_INTL}?text=${encodeURIComponent(message)}`;
 }
@@ -97,26 +99,79 @@ export const NAIL_DESIGNS: NailDesign[] = [
     image: '/images/nail_glitter_elegance_1789820636074.jpg',
     tags: ['Luxury Sparkle', 'Cocktail Glam', 'Ombré'],
   },
+  {
+    id: 'classic-charm',
+    name: 'Royal Velvet & Pearl Filigree',
+    slug: 'classic-charm',
+    subtitle: 'Burgundy Velvet & Baroque Micro-Pearl Detailing',
+    description: 'Deep royal wine velvet base with hand-placed micro caviar pearls and 24K vintage gold leaf contouring for evening grandeur.',
+    palette: ['#831843', '#BE185D', '#FDF2F8', '#D4AF37'],
+    shape: 'Square Sculpted',
+    finish: 'Matte Velvet & Gloss Contrast',
+    wearDuration: '3 to 4 Weeks',
+    image: '/images/nail_classic_charm_1789820690399.jpg',
+    tags: ['Velvet Matte', 'Caviar Pearls', 'Baroque Luxury'],
+  },
+  {
+    id: 'minimal-love',
+    name: 'Porcelain Pearl & Jelly Glaze',
+    slug: 'minimal-love',
+    subtitle: 'Sheer Jelly Tint with Hand-Painted Fine Hearts',
+    description: 'Translucent Korean milky syrup base featuring minimalist fine-line hearts and iridescent chrome aura glow.',
+    palette: ['#FDF4FF', '#F472B6', '#E0E7FF', '#FAF7F2'],
+    shape: 'Soft Almond',
+    finish: 'Milky Syrup Jelly Glaze',
+    wearDuration: '4 Weeks',
+    image: '/images/nail_minimal_love_1789820673994.jpg',
+    tags: ['Korean Jelly', 'Clean Aesthetic', 'Aura Glaze'],
+  },
+  {
+    id: 'artisan-sculpture',
+    name: 'Haute Couture Golden Flora',
+    slug: 'artisan-sculpture',
+    subtitle: 'Hand-Gilded 3D Floral Accents & Champagne Quartz',
+    description: 'Sculpted crystalline tips featuring hand-embossed 3D petals, liquid gold vein tracing, and diamond cut crystals.',
+    palette: ['#D4AF37', '#78350F', '#FEF3C7', '#1E293B'],
+    shape: 'Coffin Luxe',
+    finish: '3D Embossed & Gloss Topcoat',
+    wearDuration: '4 Weeks',
+    image: '/images/hero_nail_art_1789820586242.jpg',
+    tags: ['3D Sculpted', 'Hand-Embossed', 'Golden Flora'],
+  },
+  {
+    id: 'celestial-chrome',
+    name: 'Celestial Opal Chrome',
+    slug: 'celestial-chrome',
+    subtitle: 'Multi-Reflective Holographic Opal Shimmer',
+    description: 'Ultra-luminous opal chrome powder applied over a sheer blush foundation, producing dynamic prismatic pastel flashes under studio lights.',
+    palette: ['#E0E7FF', '#FCE7F3', '#FEF08A', '#A7F3D0'],
+    shape: 'Stiletto Sculpted',
+    finish: 'Liquid Prismatic Opal',
+    wearDuration: '4 Weeks',
+    image: '/images/aesthetic_hero_nails_1789826243580.jpg',
+    tags: ['Opal Chrome', 'Prismatic', 'Holographic'],
+    popular: true,
+  },
 ];
 
 export const SERVICES: ServiceItem[] = [
   {
-    id: 'manicure-pedicure',
-    title: 'MANICURE & PEDICURE',
-    subtitle: 'Deluxe cuticle therapy, Russian dry technique, scrub & massage',
+    id: 'chrome-glaze-aura',
+    title: 'CHROME GLAZE & AURA FINISH',
+    subtitle: 'Liquid mirror chrome, pearl glazed donut effect & velvet cat-eye',
     duration: '60 - 75 mins',
-    priceStart: '₹799',
-    description: 'A comprehensive medical-grade cuticle cleaning, nail bed nourishment, organic exfoliator, warm towel therapy, and flawless lacquer finish.',
-    features: ['Russian Cuticle Care', 'Deep Hydration Mask', 'Organic Sugar Scrub', 'High-Gloss Top Coat'],
+    priceStart: '₹1,299',
+    description: 'Ultra-reflective metallic chromes, holographic powders, and ethereal magnetic velvet cat-eye finishes sealed under high-gloss diamond glass topcoat.',
+    features: ['Liquid Mirror Chrome Powder', 'Hailey Bieber Glazed Pearl Finish', 'Velvet Magnetic Cat-Eye', 'Scratch-Proof Diamond Topcoat'],
     icon: 'Sparkles',
-    recommendedFor: 'Routine self-care and immaculate hand presentation.',
+    recommendedFor: 'Trendsetters seeking luminous, mirror-like, and iridescent finishes.',
   },
   {
     id: 'nail-art-design',
-    title: 'NAIL ART & DESIGN',
+    title: 'NAIL ART & BESPOKE DESIGN',
     subtitle: 'Bespoke hand-painted freehand art, foils, 3D gems & chrome',
     duration: '75 - 100 mins',
-    priceStart: '₹1,199',
+    priceStart: '₹1,499',
     description: 'Custom artistic styling tailored to your outfit or mood. Rohit crafts intricate miniature designs, metallic chromes, floral motifs, and geometric lines.',
     features: ['Freehand Detailing', 'Liquid Chrome & Mirror Glaze', '3D Charm Application', 'Encapsulated Dried Flora'],
     icon: 'Palette',
@@ -127,29 +182,29 @@ export const SERVICES: ServiceItem[] = [
     title: 'NAIL EXTENSIONS (GEL / ACRYLIC)',
     subtitle: 'Custom sculpted tips, builder gel overlays & seamless infills',
     duration: '90 - 120 mins',
-    priceStart: '₹1,599',
+    priceStart: '₹1,899',
     description: 'Sculpted length with zero damage to the natural nail. Choose between lightweight soft gel extensions or resilient acrylic foundations shaped to perfection.',
     features: ['Custom Tip Shaping (Almond, Coffin, Stiletto)', 'Odorless Hypoallergenic Gel', 'No-Lifting Edge Seal', 'Long-Lasting 4+ Weeks'],
     icon: 'Scissors',
-    recommendedFor: 'Short or brittle nails needing dramatic length and strength.',
+    recommendedFor: 'Short or brittle nails needing dramatic length, strength, and durability.',
   },
   {
     id: 'bridal-nails',
     title: 'BRIDAL NAILS & SPECIAL OCCASIONS',
     subtitle: 'Couture wedding nails matched to bridal lehengas & gowns',
     duration: '120 mins',
-    priceStart: '₹2,499',
-    description: 'The ultimate royal manicure for your biggest day. Includes pre-wedding swatch consultation, Swarovski crystal placement, and matching wedding jewelry tones.',
+    priceStart: '₹2,999',
+    description: 'The ultimate royal nail couture for your biggest day. Includes pre-wedding swatch consultation, Swarovski crystal placement, and matching wedding jewelry tones.',
     features: ['Swarovski Crystal Inlays', 'Lehenga Color Match', '24K Gold Dust Accents', 'Complimentary Ring Finger Detailing'],
     icon: 'Crown',
     recommendedFor: 'Brides, bridesmaids, sangeet, and gala galas.',
   },
   {
     id: 'nail-care-treatments',
-    title: 'NAIL CARE & TREATMENTS',
-    subtitle: 'Keratin restoration, IBX repair & gentle soak-off removal',
+    title: 'NAIL RESTORATION & GEL CARE',
+    subtitle: 'Keratin restoration, IBX repair & gentle damage-free removal',
     duration: '45 - 60 mins',
-    priceStart: '₹699',
+    priceStart: '₹799',
     description: 'Restore thin, peeling, or damaged nails with intense peptide and keratin treatments that rebuild natural nail protein bonds.',
     features: ['IBX Protein Rebuilding', 'Non-Damaging Gentle Soak Off', 'Keratin Infused Oils', 'Calcium Strengthening Seal'],
     icon: 'HeartHandshake',
@@ -204,7 +259,7 @@ export const INSTAGRAM_POSTS = [
   {
     id: 'ig-1',
     image: '/images/nail_heart_vibe_1789820617422.jpg',
-    caption: 'Noir & blush micro-hearts for our weekend muse ✨ @rv.nails_art_by_rohit',
+    caption: 'Noir & blush micro-hearts for our weekend muse ✨ @rv.nails_studio',
     likes: '842',
     comments: '46',
   },

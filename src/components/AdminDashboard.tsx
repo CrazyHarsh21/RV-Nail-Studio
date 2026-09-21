@@ -1614,9 +1614,9 @@ const WalkInModal: React.FC<{
                 className="w-full bg-[#FAF5F0] border border-[#E7DFD5] rounded-xl py-2 px-3 text-xs text-[#1C1917] focus:outline-none"
               >
                 <option value="Nail Art & Design">Nail Art & Design</option>
+                <option value="Chrome Glaze & Aura Finish">Chrome Glaze & Aura Finish</option>
                 <option value="Gel Extensions">Gel Extensions</option>
                 <option value="Acrylic Sculpting">Acrylic Sculpting</option>
-                <option value="Russian Manicure">Russian Manicure</option>
                 <option value="Bridal Nail Suite">Bridal Nail Suite</option>
               </select>
             </div>

@@ -237,3 +237,26 @@
   pointer-events: none;
 }
 
+/* Infinite Runway Swatches Marquee */
+@keyframes runwayMarquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-runway-infinite {
+  display: flex;
+  width: max-content;
+  animation: runwayMarquee 36s linear infinite;
+  will-change: transform;
+}
+
+.animate-runway-infinite:hover,
+.runway-paused {
+  animation-play-state: paused !important;
+}
+
+

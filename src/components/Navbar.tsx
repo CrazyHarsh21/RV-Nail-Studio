@@ -13,7 +13,7 @@ import {
   LogOut,
   Clock
 } from 'lucide-react';
-import { BRAND_PHONE, getWhatsAppUrl, BRAND_INSTAGRAM_URL } from '../data/nailData';
+import { BRAND_PHONE, getWhatsAppUrl, BRAND_INSTAGRAM_URL, BRAND_INSTAGRAM } from '../data/nailData';
 import { useAuth } from '../context/AuthContext';
 
 interface NavbarProps {
@@ -139,21 +139,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                 )}
               </button>
 
-              {/* Admin Dashboard CTA */}
-              <button
-                onClick={onOpenAdminDashboard}
-                className="relative inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-[#B45309]/30 bg-[#FEF3C7]/60 hover:bg-[#FEF3C7] text-[#92400E] text-xs font-bold shadow-2xs transition-all hover:scale-105"
-                title="Open Rohit Salon Manager & Admin Dashboard"
-              >
-                <ShieldCheck className="w-4 h-4 text-[#B45309]" />
-                <span>Admin Portal</span>
-                {pendingCount > 0 && (
-                  <span className="w-4 h-4 rounded-full bg-[#C2410C] text-white text-[9px] font-bold flex items-center justify-center animate-pulse">
-                    {pendingCount}
-                  </span>
-                )}
-              </button>
-
               {/* User Account / Login Button */}
               {user ? (
                 <div className="relative">
@@ -232,16 +217,6 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             {/* Mobile Actions Header */}
             <div className="flex md:hidden items-center gap-2">
-              {isAdmin && (
-                <button
-                  onClick={onOpenAdminDashboard}
-                  className="p-2 rounded-full bg-[#FEF3C7] text-[#B45309] border border-[#FDE68A]"
-                  title="Admin Portal"
-                >
-                  <ShieldCheck className="w-4 h-4" />
-                </button>
-              )}
-
               <button
                 onClick={() => onOpenBooking()}
                 className="px-3.5 py-1.5 rounded-full bg-gradient-to-r from-[#B45309] to-[#C2410C] text-white text-[11px] font-bold tracking-wider shadow-sm"
@@ -299,8 +274,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                 )}
               </div>
 
-              {/* Admin & My Bookings shortcuts on mobile */}
-              <div className={`grid ${isAdmin ? 'grid-cols-2' : 'grid-cols-1'} gap-2 my-1`}>
+              {/* My Bookings shortcut on mobile */}
+              <div className="flex flex-col gap-2 my-1">
                 <button
                   onClick={() => {
                     setMobileMenuOpen(false);
@@ -309,7 +284,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                   className="py-2.5 px-3 rounded-xl bg-white border border-[#E7DFD5] text-[#1C1917] text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs"
                 >
                   <Clock className="w-4 h-4 text-[#B45309]" />
-                  My Bookings
+                  <span>My Bookings</span>
+                  {appointmentsCount > 0 && (
+                    <span className="w-5 h-5 rounded-full bg-[#FEF3C7] text-[#92400E] text-[10px] font-bold flex items-center justify-center ml-1">
+                      {appointmentsCount}
+                    </span>
+                  )}
                 </button>
                 {isAdmin && (
                   <button
@@ -317,10 +297,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                       setMobileMenuOpen(false);
                       onOpenAdminDashboard();
                     }}
-                    className="py-2.5 px-3 rounded-xl bg-[#FEF3C7] border border-[#FDE68A] text-[#92400E] text-xs font-bold flex items-center justify-center gap-1.5"
+                    className="py-2 px-3 rounded-xl bg-[#FEF3C7] border border-[#FDE68A] text-[#92400E] text-xs font-bold flex items-center justify-center gap-1.5"
                   >
                     <ShieldCheck className="w-4 h-4 text-[#B45309]" />
-                    Admin Portal
+                    <span>Admin Dashboard (Staff Only)</span>
                   </button>
                 )}
               </div>
@@ -374,7 +354,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   className="text-center text-xs text-[#78716C] hover:text-[#B45309] flex items-center justify-center gap-1.5 pt-1 font-medium"
                 >
                   <Instagram className="w-3.5 h-3.5 text-[#E1306C]" />
-                  @rv.nails_art_by_rohit
+                  @{BRAND_INSTAGRAM}
                 </a>
               </div>
             </div>

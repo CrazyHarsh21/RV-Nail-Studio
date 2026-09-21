@@ -404,11 +404,11 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                     onChange={(e) => setFormData({ ...formData, service: e.target.value })}
                     className="w-full bg-[#FAF5F0] border border-[#E7DFD5] focus:border-[#B45309] rounded-xl py-2.5 px-3 text-xs text-[#1C1917] font-medium focus:outline-none transition-colors"
                   >
-                    <option value="Nail Art & Design">Nail Art & Design (Chrome, Aura, Glaze, Bespoke)</option>
-                    <option value="Manicure & Pedicure">Manicure & Pedicure (Russian Dry & Spa Manicure)</option>
-                    <option value="Nail Extensions (Gel / Acrylic)">Nail Extensions (Gel / Acrylic Tips)</option>
-                    <option value="Bridal Nails & Special Occasions">Bridal Nails & Special Occasions</option>
-                    <option value="Nail Care & Treatments">Nail Care, IBX Strengthening & Treatments</option>
+                    <option value="Nail Art & Design">Nail Art & Bespoke Design (Chrome, Glaze, 3D Charms)</option>
+                    <option value="Chrome Glaze & Aura Finish">Chrome Glaze & Aura Finish (Liquid Mirror & Cat-Eye)</option>
+                    <option value="Nail Extensions (Gel / Acrylic)">Nail Extensions (Gel / Acrylic Sculpted Tips)</option>
+                    <option value="Bridal Nails & Special Occasions">Bridal Nails & Special Occasions (Couture Sets)</option>
+                    <option value="Nail Care & Treatments">Nail Restoration, IBX Repair & Care</option>
                     <option value="Home Service Full Consultation">Home Service Full Consultation & Styling</option>
                   </select>
                 </div>

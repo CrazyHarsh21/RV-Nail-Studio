@@ -1,6 +1,6 @@
 import React from 'react';
-import { Phone, MessageCircle, Instagram, Sparkles, Heart, ArrowUp } from 'lucide-react';
-import { BRAND_PHONE, BRAND_INSTAGRAM, BRAND_INSTAGRAM_URL, getWhatsAppUrl } from '../data/nailData';
+import { Phone, MessageCircle, Instagram, Sparkles, Heart, ArrowUp, MapPin, ExternalLink } from 'lucide-react';
+import { BRAND_PHONE, BRAND_INSTAGRAM, BRAND_INSTAGRAM_URL, BRAND_ADDRESS, BRAND_MAPS_URL, getWhatsAppUrl } from '../data/nailData';
 
 interface FooterProps {
   onOpenBooking: () => void;
@@ -45,7 +45,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onReplayIntro, on
             </p>
 
             <p className="text-xs text-[#FAF7F2]/70 leading-relaxed max-w-sm mb-6 font-normal">
-              Elevating personal expression with bespoke hand-sculpted nail artistry, chrome glaze overlays, hygienic gel extensions, and high-shine manicures. Studio appointments and doorstep home visits available.
+              Elevating personal expression with bespoke hand-sculpted nail artistry, chrome glaze overlays, hygienic gel extensions, and bridal nail couture. Studio appointments and doorstep home visits available.
             </p>
 
             <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#25D366]/15 border border-[#25D366]/30 text-[#25D366] text-xs">
@@ -106,40 +106,68 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onReplayIntro, on
               Connect With Rohit
             </h4>
             
-            <p className="text-xs text-[#FAF7F2]/70 mb-4 font-normal">
-              Direct booking, custom nail art consultations, and doorstep reservations:
+            <p className="text-xs text-[#FAF7F2]/70 mb-3 font-normal">
+              Direct booking, custom nail art consultations, and studio reservations:
             </p>
 
-            <div className="flex flex-col gap-2.5 mb-6">
-              {/* WhatsApp button */}
+            {/* Studio Address Card */}
+            <div className="p-3.5 rounded-2xl bg-[#231F1C] border border-white/10 mb-4 flex items-start gap-3">
+              <div className="w-8 h-8 rounded-full bg-[#D4AF37]/15 border border-[#D4AF37]/30 flex items-center justify-center shrink-0 mt-0.5 text-[#D4AF37]">
+                <MapPin className="w-4 h-4" />
+              </div>
+              <div className="text-xs">
+                <span className="font-bold text-[#FDE68A] uppercase tracking-wider block text-[10px] mb-0.5">
+                  Studio Address
+                </span>
+                <p className="text-[#FAF7F2]/90 leading-relaxed font-normal">
+                  {BRAND_ADDRESS}
+                </p>
+                <a
+                  href={BRAND_MAPS_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-[11px] text-[#D4AF37] hover:text-[#FDE68A] hover:underline mt-1.5 font-semibold"
+                >
+                  <span>Open in Google Maps</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            </div>
+
+            {/* Contact Actions: Phone with number + WhatsApp & Instagram Icon Only */}
+            <div className="flex items-center gap-2 mb-5">
+              {/* Call button: phone icon with phone number allowed to show */}
+              <a
+                href={`tel:${BRAND_PHONE}`}
+                className="flex-1 py-2.5 px-3 rounded-full border border-white/15 bg-[#231F1C] text-[#FAF7F2] text-xs font-bold tracking-wider flex items-center justify-center gap-2 hover:border-[#D4AF37] hover:text-[#D4AF37] transition-all"
+                title={`Call ${BRAND_PHONE}`}
+              >
+                <Phone className="w-4 h-4 text-[#D4AF37] shrink-0" />
+                <span>+91 {BRAND_PHONE}</span>
+              </a>
+
+              {/* WhatsApp: Icon only click */}
               <a
                 href={getWhatsAppUrl()}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="py-2.5 px-4 rounded-full border border-[#25D366]/40 bg-[#25D366]/10 text-[#25D366] text-xs font-bold tracking-wider flex items-center justify-center gap-2 hover:bg-[#25D366]/20 transition-all"
+                className="w-10 h-10 rounded-full border border-[#25D366]/40 bg-[#25D366]/15 hover:bg-[#25D366]/30 text-[#25D366] flex items-center justify-center transition-all hover:scale-110 active:scale-95 shrink-0 shadow-xs"
+                title="Chat on WhatsApp (+91 6397449307)"
+                aria-label="WhatsApp"
               >
-                <MessageCircle className="w-4 h-4 fill-current" />
-                <span>WhatsApp: +91 {BRAND_PHONE}</span>
+                <MessageCircle className="w-5 h-5 fill-current" />
               </a>
 
-              {/* Call button */}
-              <a
-                href={`tel:${BRAND_PHONE}`}
-                className="py-2.5 px-4 rounded-full border border-white/15 bg-[#231F1C] text-[#FAF7F2] text-xs font-bold tracking-wider flex items-center justify-center gap-2 hover:border-[#D4AF37] hover:text-[#D4AF37] transition-all"
-              >
-                <Phone className="w-4 h-4 text-[#D4AF37]" />
-                <span>Call: {BRAND_PHONE}</span>
-              </a>
-
-              {/* Instagram button */}
+              {/* Instagram: Icon only click */}
               <a
                 href={BRAND_INSTAGRAM_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="py-2.5 px-4 rounded-full border border-white/15 bg-[#231F1C] text-[#FAF7F2] text-xs font-bold tracking-wider flex items-center justify-center gap-2 hover:border-[#BE185D] hover:text-[#BE185D] transition-all"
+                className="w-10 h-10 rounded-full border border-pink-500/40 bg-pink-500/15 hover:bg-pink-500/30 text-[#F43F5E] hover:text-[#FB7185] flex items-center justify-center transition-all hover:scale-110 active:scale-95 shrink-0 shadow-xs"
+                title="Instagram @rv.nails_studio"
+                aria-label="Instagram"
               >
-                <Instagram className="w-4 h-4 text-[#BE185D]" />
-                <span>Instagram: @{BRAND_INSTAGRAM}</span>
+                <Instagram className="w-5 h-5" />
               </a>
             </div>
 
@@ -155,11 +183,27 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onReplayIntro, on
 
         {/* Bottom Bar */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#FAF7F2]/60 font-medium">
-          <p>© {new Date().getFullYear()} RV Nails Art by Rohit. All rights reserved.</p>
-          <div className="flex items-center gap-4">
-            <span className="hover:text-[#FAF7F2]">Instagram @{BRAND_INSTAGRAM}</span>
+          <div>
+            <p>© {new Date().getFullYear()} RV Nails Art by Rohit. All rights reserved.</p>
+            <p className="text-[11px] text-[#FAF7F2]/45 mt-0.5">
+              L-137/17, near by LAXMI HANDLOOM, Block K, Jagat Ram Park, Laxmi Nagar, Delhi, 110092
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+            <span className="hover:text-[#FAF7F2] flex items-center gap-1">
+              <Phone className="w-3.5 h-3.5 text-[#D4AF37]" />
+              +91 {BRAND_PHONE}
+            </span>
             <span>•</span>
-            <span className="hover:text-[#FAF7F2]">Phone: {BRAND_PHONE}</span>
+            <a
+              href={BRAND_MAPS_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-[#D4AF37] flex items-center gap-1 transition-colors"
+            >
+              <MapPin className="w-3.5 h-3.5 text-[#D4AF37]" />
+              <span>Laxmi Nagar, Delhi</span>
+            </a>
             {onReplayIntro && (
               <>
                 <span>•</span>

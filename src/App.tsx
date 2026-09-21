@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
 import { NailShowcase } from './components/NailShowcase';
@@ -26,12 +26,12 @@ import { AdminDashboard } from './components/AdminDashboard';
 import { AuthModal } from './components/AuthModal';
 import { UserBookingsModal } from './components/UserBookingsModal';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { subscribeToAppointments } from './lib/firebase';
+import { subscribeToAppointments, getUserBookedIds, getGuestBookedIds } from './lib/firebase';
 import { Appointment, NailDesign } from './types';
 import { ShieldCheck, Calendar } from 'lucide-react';
 
 function SalonAppContent() {
-  const { isAdmin } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [bookingModalOpen, setBookingModalOpen] = useState(false);
   const [bookingService, setBookingService] = useState<string>('');
@@ -58,6 +58,28 @@ function SalonAppContent() {
   }, []);
 
   const pendingCount = appointments.filter((a) => a.status === 'pending').length;
+
+  // Strict user isolation: user only sees their own appointment count
+  const userBookedIds = useMemo(() => (user?.uid ? getUserBookedIds(user.uid) : []), [user?.uid]);
+  const guestBookedIds = useMemo(() => (!user ? getGuestBookedIds() : []), [user]);
+  const userEmailClean = user?.email?.toLowerCase().trim() || '';
+
+  const userAppointmentsCount = useMemo(() => {
+    if (user?.uid) {
+      return appointments.filter((apt) => {
+        if (apt.userId && apt.userId !== user.uid) return false;
+        if (apt.userId === user.uid) return true;
+        if (userEmailClean && apt.email && apt.email.toLowerCase().trim() === userEmailClean) return true;
+        if (userBookedIds.includes(apt.id)) return true;
+        return false;
+      }).length;
+    } else {
+      return appointments.filter((apt) => {
+        if (apt.userId) return false;
+        return guestBookedIds.includes(apt.id);
+      }).length;
+    }
+  }, [appointments, user, userEmailClean, userBookedIds, guestBookedIds]);
 
   const handleOpenBooking = (
     service?: string,
@@ -116,7 +138,7 @@ function SalonAppContent() {
           onOpenAdminDashboard={() => setAdminDashboardOpen(true)}
           onOpenMyBookings={() => setMyBookingsOpen(true)}
           onReplayIntro={handleReplayIntro}
-          appointmentsCount={appointments.length}
+          appointmentsCount={userAppointmentsCount}
           pendingCount={pendingCount}
         />
       )}

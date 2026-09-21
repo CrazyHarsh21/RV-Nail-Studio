@@ -65,7 +65,7 @@ export const ServicesSection: React.FC<ServicesSectionProps> = ({ onBookService 
             transition={{ delay: 0.2 }}
             className="text-sm sm:text-base text-[#57534E] font-normal tracking-wide max-w-2xl mx-auto"
           >
-            From sculpted acrylic extensions and Russian cuticle manicures to bridal nail couture and doorstep home sessions, Rohit crafts each set with autoclave-grade hygiene.
+            From sculpted acrylic extensions and custom chrome nail art to bridal nail couture and doorstep home sessions, Rohit crafts each set with autoclave-grade hygiene.
           </motion.p>
         </div>
 
