@@ -54,7 +54,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [forgotSuccess, setForgotSuccess] = useState<string | null>(null);
 
   // Admin passkey / credential
-  const [adminIdentifier, setAdminIdentifier] = useState('rohit@rvnails.com');
+  const [adminIdentifier, setAdminIdentifier] = useState('');
   const [adminPasskey, setAdminPasskey] = useState('');
   
   // UI states
@@ -676,7 +676,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <input
                       type="text"
                       required
-                      placeholder="rohit@rvnails.com"
+                      placeholder="Enter admin email or username"
                       value={adminIdentifier}
                       onChange={(e) => setAdminIdentifier(e.target.value)}
                       className="w-full bg-[#FAF5F0] border border-[#E7DFD5] focus:border-[#B45309] rounded-xl py-2.5 pl-10 pr-3 text-xs text-[#1C1917] focus:outline-none"
@@ -693,15 +693,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <input
                       type="password"
                       required
-                      placeholder="Enter passkey (e.g. rvadmin)"
+                      placeholder="Enter secret passkey"
                       value={adminPasskey}
                       onChange={(e) => setAdminPasskey(e.target.value)}
                       className="w-full bg-[#FAF5F0] border border-[#E7DFD5] focus:border-[#B45309] rounded-xl py-2.5 pl-10 pr-3 text-xs text-[#1C1917] focus:outline-none"
                     />
                   </div>
-                  <p className="text-[11px] text-[#78716C] mt-1.5">
-                    Authorized passkey: <code className="px-1.5 py-0.5 rounded bg-stone-100 font-mono text-[#B45309] font-bold">rvadmin</code>
-                  </p>
                 </div>
 
                 <div className="flex items-center gap-2 pt-2">

@@ -86,7 +86,7 @@ export const getLocalAppointments = (): Appointment[] => {
       return JSON.parse(raw);
     }
   } catch (e) {
-    console.error('Failed to read local appointments', e);
+    console.warn('Notice reading local appointments cache:', e);
   }
   return [];
 };
@@ -96,7 +96,7 @@ export const saveLocalAppointments = (appointments: Appointment[]) => {
   try {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(appointments));
   } catch (e) {
-    console.error('Failed to write local appointments', e);
+    console.warn('Notice writing local appointments cache:', e);
   }
 };
 
@@ -288,8 +288,8 @@ export const bookAppointmentInDatabase = async (
     const docRef = doc(db, 'appointments', id);
     await setDoc(docRef, cleanObjectForFirestore(newAppointment));
     console.log('[Firestore] Successfully stored appointment:', id);
-  } catch (err) {
-    console.error('[Firestore] Write error (retained in offline store):', err);
+  } catch (err: any) {
+    console.warn('[Firestore] Notice: Booking saved to local cache. Cloud sync deferred:', err?.code || err?.message || err);
   }
 
   return newAppointment;
@@ -303,7 +303,7 @@ const notifySubscribers = (list: Appointment[]) => {
     try {
       cb(list);
     } catch (err) {
-      console.error('Subscriber callback error:', err);
+      console.warn('Subscriber callback warning:', err);
     }
   });
 };
@@ -408,7 +408,7 @@ export const linkAppointmentsToUser = async (user: User | null): Promise<void> =
       notifySubscribers(updatedList);
     }
   } catch (err) {
-    console.error('Error in linkAppointmentsToUser:', err);
+    console.warn('Notice in linkAppointmentsToUser:', err);
   }
 };
 

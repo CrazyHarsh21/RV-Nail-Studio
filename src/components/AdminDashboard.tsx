@@ -50,7 +50,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   appointments
 }) => {
   const { user, isAdmin, loginAsAdminWithCredentials, toggleAdminMode } = useAuth();
-  const [gateIdentifier, setGateIdentifier] = useState('rohit@rvnails.com');
+  const [gateIdentifier, setGateIdentifier] = useState('');
   const [gatePasskey, setGatePasskey] = useState('');
   const [gateLoading, setGateLoading] = useState(false);
   const [gateError, setGateError] = useState<string | null>(null);
@@ -462,7 +462,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     value={gateIdentifier}
                     onChange={(e) => setGateIdentifier(e.target.value)}
                     className="w-full bg-[#FAF5F0] border border-[#E7DFD5] focus:border-[#B45309] rounded-xl py-2 px-3 text-xs text-[#1C1917] focus:outline-none"
-                    placeholder="rohit@rvnails.com"
+                    placeholder="Enter salon email or username"
                   />
                 </div>
 
@@ -476,11 +476,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     value={gatePasskey}
                     onChange={(e) => setGatePasskey(e.target.value)}
                     className="w-full bg-[#FAF5F0] border border-[#E7DFD5] focus:border-[#B45309] rounded-xl py-2 px-3 text-xs text-[#1C1917] focus:outline-none"
-                    placeholder="Enter passkey (e.g. rvadmin)"
+                    placeholder="Enter administrator password"
                   />
-                  <p className="text-[10px] text-stone-500 mt-1">
-                    Master passkey: <code className="px-1 py-0.5 rounded bg-stone-100 font-mono text-[#B45309] font-bold">rvadmin</code>
-                  </p>
                 </div>
 
                 <div className="flex items-center gap-2 pt-2">
@@ -1501,15 +1498,17 @@ const WalkInModal: React.FC<{
   const [nailDesign, setNailDesign] = useState('');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName || !phone) {
-      alert('Please provide client name and phone number.');
+      setFormError('Please provide client name and phone number.');
       return;
     }
+    setFormError(null);
     setSubmitting(true);
     try {
       await bookAppointmentInDatabase({
@@ -1524,9 +1523,9 @@ const WalkInModal: React.FC<{
         notes: notes || undefined
       });
       onClose();
-    } catch (err) {
-      console.error(err);
-      alert('Failed to save walk-in appointment');
+    } catch (err: any) {
+      console.warn('Notice saving walk-in appointment:', err);
+      setFormError('Could not save walk-in appointment. Please verify connection.');
     } finally {
       setSubmitting(false);
     }
@@ -1663,6 +1662,12 @@ const WalkInModal: React.FC<{
               className="w-full bg-[#FAF5F0] border border-[#E7DFD5] rounded-xl py-2 px-3 text-xs text-[#1C1917] focus:outline-none"
             />
           </div>
+
+          {formError && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700">
+              {formError}
+            </div>
+          )}
 
           <div className="flex items-center justify-between pt-4 border-t border-[#E7DFD5]">
             <div className="text-xs text-[#78716C]">

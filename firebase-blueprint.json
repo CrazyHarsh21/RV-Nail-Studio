@@ -38,5 +38,15 @@
       },
       "required": ["uid", "role", "createdAt"]
     }
+  },
+  "firestore": {
+    "/appointments/{appointmentId}": {
+      "schema": "appointments",
+      "description": "Customer salon appointments and doorstep nail service bookings"
+    },
+    "/users/{userId}": {
+      "schema": "users",
+      "description": "Registered clients and administrators"
+    }
   }
 }

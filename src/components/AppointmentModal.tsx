@@ -59,6 +59,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [createdBooking, setCreatedBooking] = useState<Appointment | null>(null);
+  const [bookingError, setBookingError] = useState<string | null>(null);
 
   // Sync initial values when modal opens
   useEffect(() => {
@@ -145,9 +146,9 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
       } catch {
         // ignore
       }
-    } catch (err) {
-      console.error('Failed to book appointment:', err);
-      alert('There was an issue saving your appointment. Please try again or WhatsApp Rohit directly.');
+    } catch (err: any) {
+      console.warn('Notice while booking appointment:', err);
+      setBookingError(err?.message || 'Could not complete booking. Please verify details or contact via WhatsApp.');
     } finally {
       setIsSubmitting(false);
     }
@@ -431,6 +432,12 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                   <Sparkles className="w-4 h-4 text-[#B45309] shrink-0" />
                   <span>Personalized consultation with Rohit. Slot reserved immediately upon confirmation.</span>
                 </div>
+
+                {bookingError && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700">
+                    {bookingError}
+                  </div>
+                )}
 
                 {/* Submit Button */}
                 <div className="pt-2">
