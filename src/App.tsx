@@ -13,7 +13,6 @@ import { WhyChooseUs } from './components/WhyChooseUs';
 import { ArtistSection } from './components/ArtistSection';
 import { HomeServiceSection } from './components/HomeServiceSection';
 import { InstagramGallery } from './components/InstagramGallery';
-import { LocationStudioCTA } from './components/LocationStudioCTA';
 import { Footer } from './components/Footer';
 import { NailDetailModal } from './components/NailDetailModal';
 import { AppointmentModal } from './components/AppointmentModal';
@@ -174,9 +173,6 @@ function SalonAppContent() {
 
         {/* Follow The Nail Journey - Instagram Curved Nail Gallery */}
         <InstagramGallery />
-
-        {/* Visit Our Nail Studio - Final Studio CTA */}
-        <LocationStudioCTA onOpenBooking={() => handleOpenBooking()} />
       </main>
 
       {/* Footer */}

@@ -26,23 +26,26 @@ export const CinematicLoader: React.FC<CinematicLoaderProps> = ({ onComplete }) 
       return;
     }
 
-    // Phase schedule (smooth cinematic progression ~4.6s total)
-    const timer1 = setTimeout(() => setPhase(1), 900);
-    const timer2 = setTimeout(() => setPhase(2), 1900);
-    const timer3 = setTimeout(() => setPhase(3), 3000);
-    const timer4 = setTimeout(() => setPhase(4), 4000);
+    // Fast cinematic progression ~1.7s total for brisk luxury loading
+    const timer1 = setTimeout(() => setPhase(1), 250);
+    const timer2 = setTimeout(() => setPhase(2), 550);
+    const timer3 = setTimeout(() => setPhase(3), 900);
+    const timer4 = setTimeout(() => setPhase(4), 1250);
     const timer5 = setTimeout(() => {
       setPhase(5);
       setIsExiting(true);
-    }, 5000);
+    }, 1500);
 
     const timerComplete = setTimeout(() => {
+      try {
+        sessionStorage.setItem('rv_intro_seen', 'true');
+      } catch {}
       onComplete();
-    }, 5800);
+    }, 1800);
 
     // Smooth progress counter
     const startTime = Date.now();
-    const duration = 5000;
+    const duration = 1500;
     const interval = setInterval(() => {
       const elapsed = Date.now() - startTime;
       const pct = Math.min(100, Math.floor((elapsed / duration) * 100));
@@ -50,7 +53,7 @@ export const CinematicLoader: React.FC<CinematicLoaderProps> = ({ onComplete }) 
       if (pct >= 100) {
         clearInterval(interval);
       }
-    }, 40);
+    }, 25);
 
     return () => {
       clearTimeout(timer1);
@@ -64,10 +67,13 @@ export const CinematicLoader: React.FC<CinematicLoaderProps> = ({ onComplete }) 
   }, [onComplete]);
 
   const handleSkip = () => {
+    try {
+      sessionStorage.setItem('rv_intro_seen', 'true');
+    } catch {}
     setIsExiting(true);
     setTimeout(() => {
       onComplete();
-    }, 500);
+    }, 200);
   };
 
   return (

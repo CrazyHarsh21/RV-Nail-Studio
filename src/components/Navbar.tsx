@@ -55,7 +55,6 @@ export const Navbar: React.FC<NavbarProps> = ({
     { label: 'Home Service', href: '#home-service' },
     { label: 'Why Choose Us', href: '#why-choose-us' },
     { label: 'Meet Rohit', href: '#artist' },
-    { label: 'Studio & Location', href: '#location-studio' },
   ];
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
