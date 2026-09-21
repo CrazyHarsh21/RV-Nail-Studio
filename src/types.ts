@@ -69,6 +69,9 @@ export interface UserProfile {
   displayName: string | null;
   phone?: string | null;
   role: 'client' | 'admin';
+  authProvider?: string;
+  passwordHash?: string;
+  lastLoginAt?: string;
   createdAt: string;
 }
 

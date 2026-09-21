@@ -10,6 +10,7 @@ import {
   onSnapshot, 
   query, 
   orderBy,
+  where,
   Firestore
 } from 'firebase/firestore';
 import { 
@@ -25,7 +26,7 @@ import {
   User
 } from 'firebase/auth';
 import firebaseConfigJson from '../../firebase-applet-config.json';
-import { Appointment, AppointmentFormData, AppointmentStatus, PaymentStatus } from '../types';
+import { Appointment, AppointmentFormData, AppointmentStatus, PaymentStatus, UserProfile } from '../types';
 
 // Price lookup dictionary for services (in INR ₹)
 export const SERVICE_PRICES: Record<string, number> = {
@@ -260,21 +261,39 @@ export const bookAppointmentInDatabase = async (
   const updatedList = [newAppointment, ...localList.filter((a) => a.id !== newAppointment.id)];
   saveLocalAppointments(updatedList);
 
-  // 2. Remember this booking on this device so the user can always see "apni booking details"
+  // 2. Remember this booking safely isolated per user account or guest session
   try {
-    const existingIds = JSON.parse(localStorage.getItem('rv_my_booking_ids') || '[]');
-    if (!existingIds.includes(newAppointment.id)) {
-      existingIds.unshift(newAppointment.id);
-      localStorage.setItem('rv_my_booking_ids', JSON.stringify(existingIds));
-    }
-    const existingCodes = JSON.parse(localStorage.getItem('rv_my_booking_codes') || '[]');
-    if (!existingCodes.includes(newAppointment.bookingCode)) {
-      existingCodes.unshift(newAppointment.bookingCode);
-      localStorage.setItem('rv_my_booking_codes', JSON.stringify(existingCodes));
-    }
-    localStorage.setItem('rv_my_last_phone', newAppointment.phone);
-    if (newAppointment.email) {
-      localStorage.setItem('rv_my_last_email', newAppointment.email);
+    if (user?.uid) {
+      const userKey = `rv_user_booking_ids_${user.uid}`;
+      const existingUserIds: string[] = JSON.parse(localStorage.getItem(userKey) || '[]');
+      if (!existingUserIds.includes(newAppointment.id)) {
+        existingUserIds.unshift(newAppointment.id);
+        localStorage.setItem(userKey, JSON.stringify(existingUserIds));
+      }
+      const userCodeKey = `rv_user_booking_codes_${user.uid}`;
+      const existingUserCodes: string[] = JSON.parse(localStorage.getItem(userCodeKey) || '[]');
+      if (!existingUserCodes.includes(newAppointment.bookingCode)) {
+        existingUserCodes.unshift(newAppointment.bookingCode);
+        localStorage.setItem(userCodeKey, JSON.stringify(existingUserCodes));
+      }
+    } else {
+      // Guest booking only - temporary device cache until claimed or reset
+      const guestKey = 'rv_guest_booking_ids';
+      const existingGuestIds: string[] = JSON.parse(localStorage.getItem(guestKey) || '[]');
+      if (!existingGuestIds.includes(newAppointment.id)) {
+        existingGuestIds.unshift(newAppointment.id);
+        localStorage.setItem(guestKey, JSON.stringify(existingGuestIds));
+      }
+      const guestCodeKey = 'rv_guest_booking_codes';
+      const existingGuestCodes: string[] = JSON.parse(localStorage.getItem(guestCodeKey) || '[]');
+      if (!existingGuestCodes.includes(newAppointment.bookingCode)) {
+        existingGuestCodes.unshift(newAppointment.bookingCode);
+        localStorage.setItem(guestCodeKey, JSON.stringify(existingGuestCodes));
+      }
+      localStorage.setItem('rv_guest_last_phone', newAppointment.phone);
+      if (newAppointment.email) {
+        localStorage.setItem('rv_guest_last_email', newAppointment.email);
+      }
     }
   } catch {
     // ignore
@@ -308,9 +327,43 @@ const notifySubscribers = (list: Appointment[]) => {
   });
 };
 
+/**
+ * Gets guest booking IDs (unauthenticated session)
+ */
+export const getGuestBookedIds = (): string[] => {
+  try {
+    return JSON.parse(localStorage.getItem('rv_guest_booking_ids') || '[]');
+  } catch {
+    return [];
+  }
+};
+
+export const getGuestBookedCodes = (): string[] => {
+  try {
+    return JSON.parse(localStorage.getItem('rv_guest_booking_codes') || '[]');
+  } catch {
+    return [];
+  }
+};
+
+/**
+ * Gets user-specific booked IDs
+ */
+export const getUserBookedIds = (uid: string): string[] => {
+  if (!uid) return [];
+  try {
+    return JSON.parse(localStorage.getItem(`rv_user_booking_ids_${uid}`) || '[]');
+  } catch {
+    return [];
+  }
+};
+
+/**
+ * Legacy backwards compatibility helpers
+ */
 export const getMyBookedIds = (): string[] => {
   try {
-    return JSON.parse(localStorage.getItem('rv_my_booking_ids') || '[]');
+    return JSON.parse(localStorage.getItem('rv_guest_booking_ids') || localStorage.getItem('rv_my_booking_ids') || '[]');
   } catch {
     return [];
   }
@@ -318,7 +371,7 @@ export const getMyBookedIds = (): string[] => {
 
 export const getMyBookedCodes = (): string[] => {
   try {
-    return JSON.parse(localStorage.getItem('rv_my_booking_codes') || '[]');
+    return JSON.parse(localStorage.getItem('rv_guest_booking_codes') || localStorage.getItem('rv_my_booking_codes') || '[]');
   } catch {
     return [];
   }
@@ -326,7 +379,7 @@ export const getMyBookedCodes = (): string[] => {
 
 export const getMyLastPhone = (): string => {
   try {
-    return localStorage.getItem('rv_my_last_phone') || '';
+    return localStorage.getItem('rv_guest_last_phone') || localStorage.getItem('rv_my_last_phone') || '';
   } catch {
     return '';
   }
@@ -334,24 +387,46 @@ export const getMyLastPhone = (): string => {
 
 export const getMyLastEmail = (): string => {
   try {
-    return localStorage.getItem('rv_my_last_email') || '';
+    return localStorage.getItem('rv_guest_last_email') || localStorage.getItem('rv_my_last_email') || '';
   } catch {
     return '';
   }
 };
 
-export const recordManualBookingId = (id: string, code?: string) => {
+export const clearGuestBookings = () => {
   try {
-    const existingIds = getMyBookedIds();
-    if (!existingIds.includes(id)) {
-      existingIds.unshift(id);
-      localStorage.setItem('rv_my_booking_ids', JSON.stringify(existingIds));
-    }
-    if (code) {
-      const existingCodes = getMyBookedCodes();
-      if (!existingCodes.includes(code)) {
-        existingCodes.unshift(code);
-        localStorage.setItem('rv_my_booking_codes', JSON.stringify(existingCodes));
+    localStorage.removeItem('rv_guest_booking_ids');
+    localStorage.removeItem('rv_guest_booking_codes');
+    localStorage.removeItem('rv_guest_last_phone');
+    localStorage.removeItem('rv_guest_last_email');
+    localStorage.removeItem('rv_my_booking_ids');
+    localStorage.removeItem('rv_my_booking_codes');
+  } catch {
+    // ignore
+  }
+};
+
+export const recordManualBookingId = (id: string, code?: string, userId?: string) => {
+  try {
+    if (userId) {
+      const userKey = `rv_user_booking_ids_${userId}`;
+      const existing = getUserBookedIds(userId);
+      if (!existing.includes(id)) {
+        existing.unshift(id);
+        localStorage.setItem(userKey, JSON.stringify(existing));
+      }
+    } else {
+      const existingGuest = getGuestBookedIds();
+      if (!existingGuest.includes(id)) {
+        existingGuest.unshift(id);
+        localStorage.setItem('rv_guest_booking_ids', JSON.stringify(existingGuest));
+      }
+      if (code) {
+        const existingCodes = getGuestBookedCodes();
+        if (!existingCodes.includes(code)) {
+          existingCodes.unshift(code);
+          localStorage.setItem('rv_guest_booking_codes', JSON.stringify(existingCodes));
+        }
       }
     }
   } catch {
@@ -360,31 +435,41 @@ export const recordManualBookingId = (id: string, code?: string) => {
 };
 
 /**
- * Automatically links unassigned device bookings to newly signed-in or signed-up user
+ * Automatically links unassigned guest bookings to newly signed-in or signed-up user.
+ * STRICT PRIVACY: NEVER touches or reassigns bookings belonging to another registered user!
  */
 export const linkAppointmentsToUser = async (user: User | null): Promise<void> => {
-  if (!user) return;
+  if (!user || !user.uid) return;
   try {
     const localList = getLocalAppointments();
-    const myIds = getMyBookedIds();
-    const myCodes = getMyBookedCodes();
-    const myLastPhone = getMyLastPhone().replace(/\D/g, '');
     const userPhone = user.phoneNumber ? user.phoneNumber.replace(/\D/g, '') : '';
     const userEmail = user.email ? user.email.toLowerCase().trim() : '';
+    const guestIds = getGuestBookedIds();
+    const guestCodes = getGuestBookedCodes();
 
     let hasUpdates = false;
     const updatedList = localList.map((apt) => {
+      // RULE 1: NEVER reassign an appointment that already belongs to another registered user!
+      if (apt.userId && apt.userId !== user.uid) {
+        return apt;
+      }
+
+      // RULE 2: If already assigned to this user, keep as is
+      if (apt.userId === user.uid) {
+        return apt;
+      }
+
+      // RULE 3: Only link unassigned (guest) bookings matching user's email, phone, or current guest session
       const aptPhone = (apt.phone || '').replace(/\D/g, '');
       const aptEmail = (apt.email || '').toLowerCase().trim();
 
-      const isBelongingToUser =
-        myIds.includes(apt.id) ||
-        (apt.bookingCode && myCodes.includes(apt.bookingCode)) ||
+      const isOwnedByGuestSelf =
         (userEmail && aptEmail === userEmail) ||
         (userPhone && aptPhone && (aptPhone.endsWith(userPhone) || userPhone.endsWith(aptPhone))) ||
-        (myLastPhone && aptPhone && (aptPhone.endsWith(myLastPhone) || myLastPhone.endsWith(aptPhone)));
+        guestIds.includes(apt.id) ||
+        (apt.bookingCode && guestCodes.includes(apt.bookingCode));
 
-      if (isBelongingToUser && (!apt.userId || apt.userId !== user.uid || !apt.email)) {
+      if (!apt.userId && isOwnedByGuestSelf) {
         hasUpdates = true;
         const linkedApt: Appointment = {
           ...apt,
@@ -392,6 +477,9 @@ export const linkAppointmentsToUser = async (user: User | null): Promise<void> =
           email: apt.email || user.email || '',
           updatedAt: new Date().toISOString()
         };
+
+        // Record in user's isolated booking store
+        recordManualBookingId(apt.id, apt.bookingCode, user.uid);
 
         // Sync update to Firestore
         setDoc(doc(db, 'appointments', apt.id), cleanObjectForFirestore(linkedApt), { merge: true }).catch((err) => {
@@ -406,9 +494,101 @@ export const linkAppointmentsToUser = async (user: User | null): Promise<void> =
     if (hasUpdates) {
       saveLocalAppointments(updatedList);
       notifySubscribers(updatedList);
+      clearGuestBookings();
     }
   } catch (err) {
     console.warn('Notice in linkAppointmentsToUser:', err);
+  }
+};
+
+/**
+ * Queries Firestore directly for a user's entire past booking history
+ */
+export const fetchUserPastBookingsFromFirestore = async (userId: string, email?: string): Promise<Appointment[]> => {
+  try {
+    const list: Appointment[] = [];
+    const seen = new Set<string>();
+
+    if (userId) {
+      const qUser = query(collection(db, 'appointments'), where('userId', '==', userId));
+      const snap = await getDocs(qUser);
+      snap.forEach((docSnap) => {
+        const item: Appointment = { id: docSnap.id, ...(docSnap.data() as Omit<Appointment, 'id'>) };
+        seen.add(item.id);
+        list.push(item);
+      });
+    }
+
+    if (email) {
+      const normalizedEmail = email.toLowerCase().trim();
+      const qEmail = query(collection(db, 'appointments'), where('email', '==', normalizedEmail));
+      const snap = await getDocs(qEmail);
+      snap.forEach((docSnap) => {
+        if (!seen.has(docSnap.id)) {
+          const item: Appointment = { id: docSnap.id, ...(docSnap.data() as Omit<Appointment, 'id'>) };
+          // Strictly ensure not owned by a different userId
+          if (!item.userId || item.userId === userId) {
+            seen.add(item.id);
+            list.push(item);
+          }
+        }
+      });
+    }
+
+    if (list.length > 0) {
+      // Merge into local store to ensure offline availability
+      const localList = getLocalAppointments();
+      const localMap = new Map(localList.map((a) => [a.id, a]));
+      list.forEach((apt) => {
+        localMap.set(apt.id, apt);
+      });
+      const merged = Array.from(localMap.values()).sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      saveLocalAppointments(merged);
+      notifySubscribers(merged);
+    }
+
+    return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  } catch (err) {
+    console.warn('Notice querying user past bookings from Firestore:', err);
+    return [];
+  }
+};
+
+/**
+ * Saves or updates a user profile in Firestore
+ */
+export const saveUserProfileToFirestore = async (profile: Partial<UserProfile> & { uid: string }): Promise<void> => {
+  try {
+    const userRef = doc(db, 'users', profile.uid);
+    const cleanPayload = cleanObjectForFirestore({
+      ...profile,
+      updatedAt: new Date().toISOString()
+    });
+    await setDoc(userRef, cleanPayload, { merge: true });
+    console.log('[Firestore] User profile saved successfully:', profile.uid);
+  } catch (err) {
+    console.warn('Notice saving user profile to Firestore:', err);
+  }
+};
+
+/**
+ * Retrieves a user profile from Firestore by email
+ */
+export const getUserProfileFromFirestoreByEmail = async (email: string): Promise<UserProfile | null> => {
+  try {
+    const normalized = email.toLowerCase().trim();
+    const q = query(collection(db, 'users'), where('email', '==', normalized));
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      const firstDoc = snap.docs[0];
+      return { uid: firstDoc.id, ...(firstDoc.data() as Omit<UserProfile, 'uid'>) };
+    }
+    return null;
+  } catch (err) {
+    console.warn('Notice querying user by email in Firestore:', err);
+    return null;
   }
 };
 

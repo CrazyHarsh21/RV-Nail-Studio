@@ -233,6 +233,7 @@ function SalonAppContent() {
         onClose={() => setMyBookingsOpen(false)}
         appointments={appointments}
         onBookNew={() => handleOpenBooking()}
+        onOpenAuth={() => setAuthModalOpen(true)}
       />
 
       {/* User Login / Register & Admin Modal */}

@@ -16,114 +16,164 @@ import {
   Home, 
   User as UserIcon,
   RefreshCw,
-  HelpCircle
+  History,
+  LogIn
 } from 'lucide-react';
 import { Appointment } from '../types';
 import { useAuth } from '../context/AuthContext';
-import { BRAND_PHONE, getWhatsAppUrl } from '../data/nailData';
-import { getMyBookedIds, getMyBookedCodes, getMyLastPhone, getMyLastEmail, recordManualBookingId } from '../lib/firebase';
+import { getWhatsAppUrl } from '../data/nailData';
+import { 
+  getGuestBookedIds, 
+  getGuestBookedCodes, 
+  getUserBookedIds, 
+  fetchUserPastBookingsFromFirestore 
+} from '../lib/firebase';
 
 interface UserBookingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   appointments: Appointment[];
   onBookNew: () => void;
+  onOpenAuth?: () => void;
 }
 
 export const UserBookingsModal: React.FC<UserBookingsModalProps> = ({
   isOpen,
   onClose,
   appointments,
-  onBookNew
+  onBookNew,
+  onOpenAuth
 }) => {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
-  const [lookupPhone, setLookupPhone] = useState('');
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [activeTab, setActiveTab] = useState<'all' | 'active' | 'history'>('all');
+  const [syncNotice, setSyncNotice] = useState<string | null>(null);
 
-  // Retrieve device-cached booking memory
-  const localBookedIds = getMyBookedIds();
-  const localBookedCodes = getMyBookedCodes();
-  const lastPhone = getMyLastPhone().replace(/\D/g, '');
-  const lastEmail = getMyLastEmail().toLowerCase().trim();
-
-  const userPhoneClean = (user as any)?.phoneNumber ? (user as any).phoneNumber.replace(/\D/g, '') : '';
   const userEmailClean = user?.email?.toLowerCase().trim() || '';
+  const userPhoneClean = (user as any)?.phoneNumber ? (user as any).phoneNumber.replace(/\D/g, '') : '';
 
-  // Filter bookings belonging to this user/device
+  // Retrieve user-specific or guest-specific booking keys
+  const userBookedIds = useMemo(() => {
+    return user?.uid ? getUserBookedIds(user.uid) : [];
+  }, [user?.uid]);
+
+  const guestBookedIds = useMemo(() => {
+    return !user ? getGuestBookedIds() : [];
+  }, [user]);
+
+  const guestBookedCodes = useMemo(() => {
+    return !user ? getGuestBookedCodes() : [];
+  }, [user]);
+
+  /**
+   * STRICT DATA PRIVACY FILTER:
+   * - If a user is logged in: ONLY their own bookings are returned (never other users' bookings).
+   * - If no user is logged in (guest): ONLY bookings created during this guest session are returned.
+   */
   const userAppointments = useMemo(() => {
-    const matched = appointments.filter((apt) => {
-      // 1. Matched by device booking ID
-      if (localBookedIds.includes(apt.id)) return true;
+    if (user?.uid) {
+      return appointments.filter((apt) => {
+        // STRICT RULE 1: Never show an appointment explicitly owned by another user ID
+        if (apt.userId && apt.userId !== user.uid) {
+          return false;
+        }
 
-      // 2. Matched by device booking Code
-      if (apt.bookingCode && localBookedCodes.includes(apt.bookingCode)) return true;
+        // STRICT RULE 2: Show if matching current user ID
+        if (apt.userId === user.uid) {
+          return true;
+        }
 
-      // 3. Matched by authenticated user ID
-      if (user && apt.userId && apt.userId === user.uid) return true;
+        // STRICT RULE 3: Show if matching verified account email
+        if (userEmailClean && apt.email && apt.email.toLowerCase().trim() === userEmailClean) {
+          return true;
+        }
 
-      // 4. Matched by user email
-      if (userEmailClean && apt.email && apt.email.toLowerCase().trim() === userEmailClean) return true;
-      if (lastEmail && apt.email && apt.email.toLowerCase().trim() === lastEmail) return true;
+        // STRICT RULE 4: Show if matching user's phone
+        const aptPhoneClean = apt.phone ? apt.phone.replace(/\D/g, '') : '';
+        if (userPhoneClean && aptPhoneClean && (aptPhoneClean.endsWith(userPhoneClean) || userPhoneClean.endsWith(aptPhoneClean))) {
+          return true;
+        }
 
-      // 5. Matched by clean phone number
-      const aptPhoneClean = apt.phone ? apt.phone.replace(/\D/g, '') : '';
-      if (userPhoneClean && aptPhoneClean && (aptPhoneClean.endsWith(userPhoneClean) || userPhoneClean.endsWith(aptPhoneClean))) {
-        return true;
+        // STRICT RULE 5: Show if in this user's isolated local list
+        if (userBookedIds.includes(apt.id)) {
+          return true;
+        }
+
+        return false;
+      });
+    } else {
+      // Guest session: only unassigned bookings made on this device
+      return appointments.filter((apt) => {
+        // Never show any registered user's appointments to a guest!
+        if (apt.userId) {
+          return false;
+        }
+        return guestBookedIds.includes(apt.id) || (apt.bookingCode && guestBookedCodes.includes(apt.bookingCode));
+      });
+    }
+  }, [appointments, user, userEmailClean, userPhoneClean, userBookedIds, guestBookedIds, guestBookedCodes]);
+
+  // Sync from Cloud Database on request
+  const handleCloudSync = async () => {
+    if (!user?.uid) {
+      setSyncNotice('Sign in to sync your cloud booking history across devices.');
+      setTimeout(() => setSyncNotice(null), 3500);
+      return;
+    }
+    try {
+      setIsSyncing(true);
+      const results = await fetchUserPastBookingsFromFirestore(user.uid, user.email || undefined);
+      setSyncNotice(`Synced ${results.length} bookings successfully from Studio Database.`);
+      setTimeout(() => setSyncNotice(null), 3500);
+    } catch {
+      setSyncNotice('Could not connect to Cloud. Offline history displayed.');
+      setTimeout(() => setSyncNotice(null), 3500);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  // Filter based on Active vs History tabs
+  const tabAppointments = useMemo(() => {
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    return userAppointments.filter((apt) => {
+      const isPastDate = apt.date < todayStr;
+      const isInactive = apt.status === 'completed' || apt.status === 'cancelled';
+
+      if (activeTab === 'active') {
+        return !isInactive && !isPastDate;
       }
-      if (lastPhone && aptPhoneClean && (aptPhoneClean.endsWith(lastPhone) || lastPhone.endsWith(aptPhoneClean))) {
-        return true;
+      if (activeTab === 'history') {
+        return isInactive || isPastDate;
       }
-
-      return false;
+      return true; // 'all'
     });
+  }, [userAppointments, activeTab]);
 
-    return matched;
-  }, [appointments, localBookedIds, localBookedCodes, user, userEmailClean, userPhoneClean, lastPhone, lastEmail]);
-
-  // Handle Search / Filter
+  // Handle Search / Filter strictly within user's own data
   const filteredAppointments = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) {
-      return userAppointments;
+      return tabAppointments;
     }
 
-    const cleanQ = q.replace(/\D/g, '');
-
-    // Search through all appointments if user is looking up their booking
-    return appointments.filter((apt) => {
+    return tabAppointments.filter((apt) => {
       const codeMatch = apt.bookingCode?.toLowerCase().includes(q);
       const nameMatch = apt.fullName?.toLowerCase().includes(q);
-      const cleanPhone = apt.phone?.replace(/\D/g, '') || '';
-      const phoneMatch = cleanQ.length >= 4 && (cleanPhone.includes(cleanQ) || cleanQ.includes(cleanPhone));
-      const emailMatch = apt.email?.toLowerCase().includes(q);
       const serviceMatch = apt.service?.toLowerCase().includes(q);
-      return codeMatch || nameMatch || phoneMatch || emailMatch || serviceMatch;
+      const dateMatch = apt.date?.includes(q);
+      const statusMatch = apt.status?.toLowerCase().includes(q);
+      return codeMatch || nameMatch || serviceMatch || dateMatch || statusMatch;
     });
-  }, [searchQuery, userAppointments, appointments]);
+  }, [searchQuery, tabAppointments]);
 
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
     setCopiedCode(code);
     setTimeout(() => setCopiedCode(null), 2000);
-  };
-
-  const handleManualLookup = (e: React.FormEvent) => {
-    e.preventDefault();
-    const query = lookupPhone.trim();
-    if (!query) return;
-    setSearchQuery(query);
-
-    // Auto-remember matched bookings on this device
-    const cleanLookup = query.toLowerCase().replace(/\D/g, '');
-    appointments.forEach((apt) => {
-      const cleanPhone = (apt.phone || '').replace(/\D/g, '');
-      const codeMatch = apt.bookingCode?.toLowerCase() === query.toLowerCase();
-      const phoneMatch = cleanLookup.length >= 5 && (cleanPhone.endsWith(cleanLookup) || cleanLookup.endsWith(cleanPhone));
-      if (codeMatch || phoneMatch) {
-        recordManualBookingId(apt.id, apt.bookingCode);
-      }
-    });
   };
 
   const getStatusBadge = (status: Appointment['status']) => {
@@ -138,15 +188,15 @@ export const UserBookingsModal: React.FC<UserBookingsModalProps> = ({
       case 'in_progress':
         return (
           <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold uppercase tracking-wider">
-            <Sparkles className="w-3 h-3 animate-spin" />
+            <Clock className="w-3 h-3 animate-spin" />
             <span>In Progress</span>
           </div>
         );
       case 'completed':
         return (
-          <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-200 text-[10px] font-bold uppercase tracking-wider">
-            <CheckCircle2 className="w-3 h-3" />
-            <span>Completed</span>
+          <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-stone-100 text-stone-700 border border-stone-300 text-[10px] font-bold uppercase tracking-wider">
+            <CheckCircle2 className="w-3 h-3 text-stone-600" />
+            <span>Completed (History)</span>
           </div>
         );
       case 'cancelled':
@@ -173,9 +223,9 @@ export const UserBookingsModal: React.FC<UserBookingsModalProps> = ({
       case 'in_progress':
         return 'Nail art session is currently ongoing.';
       case 'completed':
-        return 'Appointment completed. Thank you for visiting RV Nails Art!';
+        return 'Appointment completed. Past booking stored in your account history.';
       case 'cancelled':
-        return 'This appointment was cancelled. Please book another slot or message Rohit.';
+        return 'This appointment was cancelled. You can book another session anytime.';
       default:
         return 'रोहित जल्द ही आपके स्लॉट की समीक्षा करके WhatsApp पर पुष्टि करेंगे.';
     }
@@ -201,34 +251,132 @@ export const UserBookingsModal: React.FC<UserBookingsModalProps> = ({
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
           className="relative w-full max-w-2xl bg-white border border-[#E7DFD5] rounded-3xl shadow-2xl overflow-hidden z-10 flex flex-col max-h-[90vh] my-auto"
         >
+          {/* Top Hairline Accent */}
+          <div className="h-1.5 bg-gradient-to-r from-[#B45309] via-[#D4AF37] via-[#C2410C] to-[#BE185D]" />
+
           {/* Header */}
           <div className="p-5 sm:p-6 border-b border-[#E7DFD5] bg-[#FAF5F0]">
             <div className="flex items-center justify-between">
               <div>
-                <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#B45309]">
-                  Live Appointments & Status
+                <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#B45309] block">
+                  Studio Client Portal
                 </span>
                 <h3 className="font-serif text-xl sm:text-2xl font-bold text-[#1C1917] flex items-center gap-2">
                   <span>My Booking Details</span>
-                  <span className="text-sm font-sans font-normal text-[#78716C]">(अपनी बुकिंग देखें)</span>
+                  <span className="text-sm font-sans font-normal text-[#78716C]">(अपनी बुकिंग और हिस्ट्री देखें)</span>
                 </h3>
               </div>
 
-              <button
-                onClick={onClose}
-                className="w-9 h-9 rounded-full bg-white border border-[#E7DFD5] text-[#78716C] hover:text-[#1C1917] flex items-center justify-center transition-all shadow-xs hover:scale-105"
-                aria-label="Close"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-2">
+                {user && (
+                  <button
+                    onClick={handleCloudSync}
+                    disabled={isSyncing}
+                    className="p-2 rounded-xl bg-white border border-[#E7DFD5] text-[#78716C] hover:text-[#B45309] transition-all flex items-center gap-1.5 text-xs font-semibold shadow-2xs"
+                    title="Refresh from Studio Cloud Database"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-[#B45309]' : ''}`} />
+                    <span className="hidden sm:inline">Sync Cloud</span>
+                  </button>
+                )}
+
+                <button
+                  onClick={onClose}
+                  className="w-9 h-9 rounded-full bg-white border border-[#E7DFD5] text-[#78716C] hover:text-[#1C1917] flex items-center justify-center transition-all shadow-xs hover:scale-105"
+                  aria-label="Close"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
-            {/* Quick Search / Lookup Input */}
-            <div className="mt-4 relative">
+            {/* Account Status Strip */}
+            <div className="mt-3.5 p-2.5 rounded-2xl bg-white border border-[#E7DFD5] flex items-center justify-between text-xs">
+              {user ? (
+                <div className="flex items-center gap-2 text-stone-800">
+                  <div className="w-6 h-6 rounded-full bg-[#FEF3C7] text-[#B45309] flex items-center justify-center font-bold text-[11px]">
+                    {user.displayName ? user.displayName.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                  <div className="leading-tight">
+                    <span className="font-bold text-[#1C1917] block">
+                      {user.displayName || 'Customer Account'}
+                    </span>
+                    <span className="text-[10px] text-[#78716C]">
+                      {user.email || 'Logged in'} • Data isolated & saved to your account
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between w-full gap-2">
+                  <div className="text-[11px] text-[#78716C]">
+                    Guest Session: Bookings on this device are shown. Sign in to sync across devices.
+                  </div>
+                  {onOpenAuth && (
+                    <button
+                      onClick={() => {
+                        onClose();
+                        onOpenAuth();
+                      }}
+                      className="px-2.5 py-1 rounded-lg bg-[#FAF5F0] border border-[#E7DFD5] text-[#B45309] hover:bg-[#B45309] hover:text-white transition-colors font-bold text-[10px] flex items-center gap-1 shrink-0"
+                    >
+                      <LogIn className="w-3 h-3" />
+                      <span>Sign In / Sign Up</span>
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Cloud Sync Notice */}
+            {syncNotice && (
+              <div className="mt-2 text-[11px] text-[#B45309] font-medium bg-[#FEF3C7]/60 px-3 py-1.5 rounded-xl border border-[#FDE68A]">
+                {syncNotice}
+              </div>
+            )}
+
+            {/* Navigation Filter Tabs: Active, History, All */}
+            <div className="mt-4 flex items-center justify-between gap-2 border-b border-[#E7DFD5] pb-2">
+              <div className="flex items-center gap-1.5 text-xs font-semibold">
+                <button
+                  onClick={() => setActiveTab('all')}
+                  className={`px-3 py-1.5 rounded-xl transition-all ${
+                    activeTab === 'all'
+                      ? 'bg-[#B45309] text-white shadow-xs font-bold'
+                      : 'text-[#78716C] hover:text-[#1C1917] hover:bg-white'
+                  }`}
+                >
+                  All ({userAppointments.length})
+                </button>
+                <button
+                  onClick={() => setActiveTab('active')}
+                  className={`px-3 py-1.5 rounded-xl transition-all ${
+                    activeTab === 'active'
+                      ? 'bg-[#B45309] text-white shadow-xs font-bold'
+                      : 'text-[#78716C] hover:text-[#1C1917] hover:bg-white'
+                  }`}
+                >
+                  Active & Upcoming
+                </button>
+                <button
+                  onClick={() => setActiveTab('history')}
+                  className={`px-3 py-1.5 rounded-xl transition-all flex items-center gap-1 ${
+                    activeTab === 'history'
+                      ? 'bg-[#B45309] text-white shadow-xs font-bold'
+                      : 'text-[#78716C] hover:text-[#1C1917] hover:bg-white'
+                  }`}
+                >
+                  <History className="w-3 h-3" />
+                  <span>Past History (पुरानी बुकिंग)</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Search Bar within User's Bookings */}
+            <div className="mt-3 relative">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#A8A29E]" />
               <input
                 type="text"
-                placeholder="Search by 10-digit Mobile No. or Booking Code (e.g. RV-XXXX)..."
+                placeholder="Search your bookings by service, booking code (RV-XXXX), or date..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full bg-white border border-[#E7DFD5] focus:border-[#B45309] rounded-xl py-2 pl-10 pr-9 text-xs text-[#1C1917] placeholder-[#A8A29E] focus:outline-none transition-colors shadow-2xs"
@@ -250,34 +398,22 @@ export const UserBookingsModal: React.FC<UserBookingsModalProps> = ({
             {filteredAppointments.length === 0 ? (
               <div className="text-center py-10 px-4 bg-white rounded-2xl border border-[#E7DFD5] p-6 shadow-xs">
                 <div className="w-14 h-14 rounded-full bg-[#FEF3C7] border border-[#FDE68A] text-[#B45309] flex items-center justify-center mx-auto mb-3 shadow-xs">
-                  <Calendar className="w-6 h-6" />
+                  {activeTab === 'history' ? <History className="w-6 h-6" /> : <Calendar className="w-6 h-6" />}
                 </div>
                 <h4 className="font-serif text-lg font-bold text-[#1C1917] mb-1">
-                  {searchQuery ? 'No Matching Bookings Found' : 'No Bookings Found on this Device'}
+                  {searchQuery
+                    ? 'No Matching Bookings Found'
+                    : activeTab === 'history'
+                    ? 'No Past Booking History'
+                    : 'No Active Bookings in Your Account'}
                 </h4>
                 <p className="text-xs text-[#78716C] max-w-md mx-auto mb-5">
                   {searchQuery
-                    ? `We could not find any appointment matching "${searchQuery}". Please verify your 10-digit mobile number or booking code.`
-                    : 'Booked recently from another phone or browser? Track your appointment instantly using your 10-digit mobile number:'}
+                    ? `No booking found matching "${searchQuery}".`
+                    : activeTab === 'history'
+                    ? 'Completed or cancelled appointments will automatically appear here in your account history.'
+                    : 'You do not have any active appointments reserved right now.'}
                 </p>
-
-                {/* Instant Track Form */}
-                <form onSubmit={handleManualLookup} className="max-w-xs mx-auto flex gap-2 mb-5">
-                  <input
-                    type="tel"
-                    placeholder="Enter 10-digit Mobile"
-                    maxLength={10}
-                    value={lookupPhone}
-                    onChange={(e) => setLookupPhone(e.target.value.replace(/\D/g, ''))}
-                    className="flex-1 bg-[#FAF5F0] border border-[#E7DFD5] rounded-xl px-3 py-2 text-xs text-[#1C1917] focus:outline-none focus:border-[#B45309]"
-                  />
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-[#B45309] text-white text-xs font-bold rounded-xl hover:bg-[#92400E] transition-colors"
-                  >
-                    Track
-                  </button>
-                </form>
 
                 <div className="flex justify-center gap-3">
                   <button
@@ -342,7 +478,7 @@ export const UserBookingsModal: React.FC<UserBookingsModalProps> = ({
                     <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-100 flex items-center gap-2">
                       <Phone className="w-4 h-4 text-[#B45309] shrink-0" />
                       <div>
-                        <span className="text-[10px] text-[#78716C] block uppercase font-bold">Phone Number</span>
+                        <span className="text-[10px] text-[#78716C] block uppercase font-bold">Contact Phone</span>
                         <span className="font-semibold text-[#1C1917]">+91 {apt.phone}</span>
                       </div>
                     </div>
@@ -399,11 +535,6 @@ export const UserBookingsModal: React.FC<UserBookingsModalProps> = ({
                       <strong>Rohit's Note:</strong> {apt.adminNotes}
                     </div>
                   )}
-
-                  {/* Consultation Pricing Note */}
-                  <div className="text-[11px] text-[#78716C] pt-1">
-                    * Pricing is finalized after consultation based on chosen nail extension length, custom chrome/glaze, and art complexity.
-                  </div>
 
                   {/* Actions: WhatsApp Rohit & Call */}
                   <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#F5ECE4]">

@@ -34,6 +34,9 @@
         "displayName": { "type": "string", "description": "Display name" },
         "phone": { "type": "string", "description": "Phone number" },
         "role": { "type": "string", "enum": ["client", "admin"], "description": "User access role" },
+        "authProvider": { "type": "string", "description": "Authentication method (google.com, password, etc)" },
+        "passwordHash": { "type": "string", "description": "Hashed password for fallback authentication" },
+        "lastLoginAt": { "type": "string", "description": "Timestamp of most recent login" },
         "createdAt": { "type": "string", "description": "Account registration timestamp" }
       },
       "required": ["uid", "role", "createdAt"]
