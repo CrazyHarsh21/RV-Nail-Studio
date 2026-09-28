@@ -8,14 +8,14 @@ export const BRAND_ADDRESS = 'L-137/17, near by LAXMI HANDLOOM, Block K, Jagat R
 export const BRAND_MAPS_URL = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent('L-137/17, near by LAXMI HANDLOOM, Block K, Jagat Ram Park, Laxmi Nagar, Delhi, 110092');
 
 export function getWhatsAppUrl(customMessage?: string): string {
-  const defaultMsg = 'Hi RV Nails Studio by Rohit, I would like to book a nail appointment.';
+  const defaultMsg = 'Hi RV Nail Studio by Rohit, I would like to book a nail appointment.';
   const message = customMessage || defaultMsg;
   return `https://wa.me/${BRAND_PHONE_INTL}?text=${encodeURIComponent(message)}`;
 }
 
-export const HERO_IMAGE = '/images/aesthetic_hero_nails_1789826243580.jpg';
-export const ARTIST_IMAGE = '/images/rohit_artist_portrait_1789826210402.jpg';
-export const ARTIST_CRAFTING_IMAGE = '/images/rohit_crafting_action_1789826228998.jpg';
+export const HERO_IMAGE = '/images/aesthetic_hero_nails_1789826243580.webp';
+export const ARTIST_IMAGE = '/images/rohit_artist_portrait_1789826210402.webp';
+export const ARTIST_CRAFTING_IMAGE = '/images/rohit_crafting_action_1789826228998.webp';
 
 export const NAIL_DESIGNS: NailDesign[] = [
   {
@@ -28,7 +28,7 @@ export const NAIL_DESIGNS: NailDesign[] = [
     shape: 'Almond Sculpted',
     finish: 'Mirror Glaze Multi-Chroma',
     wearDuration: '4 Weeks',
-    image: '/images/multicolor_nail_set_1789822976547.jpg',
+    image: '/images/multicolor_nail_set_1789822976547.webp',
     tags: ['Multi-Color', 'Trending Art', 'Chroma Shift'],
     popular: true,
   },
@@ -42,7 +42,7 @@ export const NAIL_DESIGNS: NailDesign[] = [
     shape: 'Coffin Stiletto',
     finish: 'Prismatic Mirror Glaze',
     wearDuration: '3 to 4 Weeks',
-    image: '/images/rainbow_chrome_nails_1789822991773.jpg',
+    image: '/images/rainbow_chrome_nails_1789822991773.webp',
     tags: ['Pastel Rainbow', 'Chrome Powder', '3D Water Drop'],
     popular: true,
   },
@@ -56,7 +56,7 @@ export const NAIL_DESIGNS: NailDesign[] = [
     shape: 'Stiletto Luxury',
     finish: 'High-Gloss Liquid Quartz',
     wearDuration: '4 Weeks',
-    image: '/images/vibrant_gem_nails_1789823007715.jpg',
+    image: '/images/vibrant_gem_nails_1789823007715.webp',
     tags: ['Jeweled', 'Multi-Gem', 'Hand-Painted'],
     popular: true,
   },
@@ -70,7 +70,7 @@ export const NAIL_DESIGNS: NailDesign[] = [
     shape: 'Oval Natural',
     finish: 'Milky Glass Gel Lacquer',
     wearDuration: '3 to 4 Weeks',
-    image: '/images/nail_nature_touch_1789820655987.jpg',
+    image: '/images/nail_nature_touch_1789820655987.webp',
     tags: ['Emerald Green', 'Gold Foil', 'Botanical Art'],
   },
   {
@@ -83,7 +83,7 @@ export const NAIL_DESIGNS: NailDesign[] = [
     shape: 'Almond Sculpted',
     finish: 'Ultra-Gloss Gel & Soft Velvet',
     wearDuration: '3 to 4 Weeks',
-    image: '/images/nail_heart_vibe_1789820617422.jpg',
+    image: '/images/nail_heart_vibe_1789820617422.webp',
     tags: ['Romantic Noir', 'Fine Line', 'Hand-Painted'],
   },
   {
@@ -96,7 +96,7 @@ export const NAIL_DESIGNS: NailDesign[] = [
     shape: 'Coffin Stiletto',
     finish: 'Crystalline Shimmer Topcoat',
     wearDuration: '4 Weeks',
-    image: '/images/nail_glitter_elegance_1789820636074.jpg',
+    image: '/images/nail_glitter_elegance_1789820636074.webp',
     tags: ['Luxury Sparkle', 'Cocktail Glam', 'Ombré'],
   },
   {
@@ -109,7 +109,7 @@ export const NAIL_DESIGNS: NailDesign[] = [
     shape: 'Square Sculpted',
     finish: 'Matte Velvet & Gloss Contrast',
     wearDuration: '3 to 4 Weeks',
-    image: '/images/nail_classic_charm_1789820690399.jpg',
+    image: '/images/nail_classic_charm_1789820690399.webp',
     tags: ['Velvet Matte', 'Caviar Pearls', 'Baroque Luxury'],
   },
   {
@@ -122,7 +122,7 @@ export const NAIL_DESIGNS: NailDesign[] = [
     shape: 'Soft Almond',
     finish: 'Milky Syrup Jelly Glaze',
     wearDuration: '4 Weeks',
-    image: '/images/nail_minimal_love_1789820673994.jpg',
+    image: '/images/nail_minimal_love_1789820673994.webp',
     tags: ['Korean Jelly', 'Clean Aesthetic', 'Aura Glaze'],
   },
   {
@@ -135,7 +135,7 @@ export const NAIL_DESIGNS: NailDesign[] = [
     shape: 'Coffin Luxe',
     finish: '3D Embossed & Gloss Topcoat',
     wearDuration: '4 Weeks',
-    image: '/images/hero_nail_art_1789820586242.jpg',
+    image: '/images/hero_nail_art_1789820586242.webp',
     tags: ['3D Sculpted', 'Hand-Embossed', 'Golden Flora'],
   },
   {
@@ -148,7 +148,7 @@ export const NAIL_DESIGNS: NailDesign[] = [
     shape: 'Stiletto Sculpted',
     finish: 'Liquid Prismatic Opal',
     wearDuration: '4 Weeks',
-    image: '/images/aesthetic_hero_nails_1789826243580.jpg',
+    image: '/images/aesthetic_hero_nails_1789826243580.webp',
     tags: ['Opal Chrome', 'Prismatic', 'Holographic'],
     popular: true,
   },

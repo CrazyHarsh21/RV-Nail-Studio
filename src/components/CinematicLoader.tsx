@@ -12,7 +12,7 @@ export const CinematicLoader: React.FC<CinematicLoaderProps> = ({ onComplete }) 
   // 1: Nail contour outline drawing (1s - 2s)
   // 2: Base fill & botanical floral painting stroke-by-stroke (2s - 3.2s)
   // 3: Gloss cure, specular sweep & 3D tilt (3.2s - 4.2s)
-  // 4: Logo reveal (RV Nails Art by Rohit) & Tagline line-by-line (4.2s - 5.2s)
+  // 4: Logo reveal (RV Nail Studio by Rohit) & Tagline line-by-line (4.2s - 5.2s)
   // 5: Final nail expansion & curtain transition (5.2s+)
   const [phase, setPhase] = useState<number>(0);
   const [progress, setProgress] = useState<number>(0);
@@ -457,7 +457,7 @@ export const CinematicLoader: React.FC<CinematicLoaderProps> = ({ onComplete }) 
                   transition={{ duration: 0.9, delay: 0.2 }}
                   className="font-serif text-2xl sm:text-3xl font-bold uppercase text-transparent bg-clip-text bg-gradient-to-r from-[#FAF7F2] via-[#FF4E9B] to-[#00D2FF] tracking-[0.28em] leading-none"
                 >
-                  RV NAILS ART
+                  RV NAIL STUDIO
                 </motion.h1>
 
                 <motion.span

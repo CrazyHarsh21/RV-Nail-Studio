@@ -32,7 +32,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onReplayIntro, on
               </div>
               <div>
                 <h3 className="font-serif text-xl font-bold uppercase tracking-widest leading-tight text-white">
-                  RV NAILS ART
+                  RV NAIL STUDIO
                 </h3>
                 <p className="text-xs text-[#D4AF37] tracking-[0.25em] uppercase font-semibold">
                   by Rohit
@@ -184,7 +184,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onReplayIntro, on
         {/* Bottom Bar */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#FAF7F2]/60 font-medium">
           <div>
-            <p>© {new Date().getFullYear()} RV Nails Art by Rohit. All rights reserved.</p>
+            <p>© {new Date().getFullYear()} RV Nail Studio by Rohit. All rights reserved.</p>
             <p className="text-[11px] text-[#FAF7F2]/45 mt-0.5">
               L-137/17, near by LAXMI HANDLOOM, Block K, Jagat Ram Park, Laxmi Nagar, Delhi, 110092
             </p>

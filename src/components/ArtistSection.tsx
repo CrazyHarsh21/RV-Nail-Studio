@@ -37,7 +37,9 @@ export const ArtistSection: React.FC<ArtistSectionProps> = ({ onOpenBooking }) =
               <div className="relative w-full h-full rounded-[56px_56px_18px_18px] overflow-hidden border-2 border-[#D4AF37]/70 bg-white shadow-[0_20px_50px_rgba(180,83,9,0.15)]">
                 <img
                   src={activePhoto === 'portrait' ? ARTIST_IMAGE : ARTIST_CRAFTING_IMAGE}
-                  alt="Rohit - Founder & Master Nail Artist at RV Nails Art"
+                  alt="Rohit - Founder & Master Nail Artist at RV Nail Studio"
+                  loading="lazy"
+                  decoding="async"
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-700"
                 />
@@ -124,7 +126,7 @@ export const ArtistSection: React.FC<ArtistSectionProps> = ({ onOpenBooking }) =
             {/* Artist credential tags */}
             <div className="flex flex-wrap items-center gap-2 mb-6">
               <span className="px-3.5 py-1 rounded-full bg-white border border-[#E7DFD5] text-xs text-[#292524] font-semibold tracking-wider shadow-2xs">
-                Founder of RV Nails Art
+                Founder of RV Nail Studio
               </span>
               <span className="px-3.5 py-1 rounded-full bg-[#FEF3C7] border border-[#FDE68A] text-xs text-[#92400E] font-semibold tracking-wider">
                 Chrome & Gel Sculpting Specialist

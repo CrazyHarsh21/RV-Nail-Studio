@@ -58,7 +58,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking }) => {
               </motion.div>
             </div>
 
-            {/* Main Headlines - Authentic to RV Nails Art by Rohit */}
+            {/* Main Headlines - Authentic to RV Nail Studio by Rohit */}
             <div className="overflow-hidden mb-2">
               <motion.p
                 initial={{ opacity: 0, y: 15 }}
@@ -147,7 +147,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking }) => {
 
               {/* Secondary CTA: WhatsApp Rohit */}
               <a
-                href={getWhatsAppUrl("Hi Rohit, I would like to book a luxury nail appointment with RV Nails Art.")}
+                href={getWhatsAppUrl("Hi Rohit, I would like to book a luxury nail appointment with RV Nail Studio.")}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center gap-2.5 px-7 py-4 rounded-[28px_28px_14px_14px] border border-[#25D366]/60 bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#15803D] text-xs sm:text-sm font-bold tracking-[0.16em] uppercase transition-all duration-300 shadow-sm hover:scale-[1.02] active:scale-95 text-center"
@@ -196,7 +196,10 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking }) => {
               <div className="relative w-full h-full rounded-[60px_60px_20px_20px] overflow-hidden border-2 border-[#E7DFD5] bg-white shadow-[0_20px_50px_rgba(40,25,10,0.12)]">
                 <img
                   src={HERO_IMAGE}
-                  alt="RV Nails Art by Rohit - Editorial Bespoke Nail Sculpting"
+                  alt="RV Nail Studio by Rohit - Editorial Bespoke Nail Sculpting"
+                  loading="eager"
+                  decoding="async"
+                  fetchPriority="high"
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover object-center transform transition-transform duration-1000 group-hover:scale-105"
                 />
@@ -216,7 +219,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking }) => {
                     </div>
                     <div>
                       <p className="text-xs font-serif font-bold text-[#1C1917] tracking-wider uppercase">
-                        RV Nails Art Studio
+                        RV Nail Studio
                       </p>
                       <p className="text-[10px] text-[#92400E] tracking-wider uppercase font-semibold">
                         By Rohit • Doorstep Available

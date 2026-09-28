@@ -143,7 +143,7 @@ export const ClientHistoryModal: React.FC<ClientHistoryModalProps> = ({
             {/* Top Quick Actions */}
             <div className="flex items-center gap-2">
               <a
-                href={getWhatsAppUrl(`Hi ${client.fullName}, this is Rohit from RV Nails Art! Reaching out regarding your salon appointments.`)}
+                href={getWhatsAppUrl(`Hi ${client.fullName}, this is Rohit from RV Nail Studio! Reaching out regarding your salon appointments.`)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#25D366]/40 bg-[#25D366]/10 text-[#15803D] text-xs font-bold hover:bg-[#25D366]/20 transition-all"

@@ -98,7 +98,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
               <div className="flex flex-col text-left">
                 <span className="font-serif text-base sm:text-lg font-bold tracking-widest text-[#1C1917] uppercase leading-none group-hover:text-[#B45309] transition-colors">
-                  RV NAILS ART
+                  RV NAIL STUDIO
                 </span>
                 <span className="text-[9px] sm:text-[10px] text-[#92400E] tracking-[0.2em] uppercase font-semibold mt-0.5">
                   By Rohit • Studio & Doorstep
@@ -248,7 +248,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between pb-3 border-b border-[#E7DFD5]">
                 <span className="text-xs text-[#B45309] uppercase tracking-widest font-serif font-bold">
-                  RV Nails Art by Rohit
+                  RV Nail Studio by Rohit
                 </span>
                 {user ? (
                   <button

@@ -48,7 +48,7 @@ export const WhyChooseUs: React.FC = () => {
             transition={{ delay: 0.1 }}
             className="text-3xl sm:text-5xl lg:text-6xl font-serif font-light text-[#0C4A6E] uppercase tracking-tight mb-4"
           >
-            Why Choose <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#0284C7] via-[#0369A1] to-[#1D4ED8]">RV Nails Art</span>
+            Why Choose <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#0284C7] via-[#0369A1] to-[#1D4ED8]">RV Nail Studio</span>
           </motion.h2>
 
           <motion.p

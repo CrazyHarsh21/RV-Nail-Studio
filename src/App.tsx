@@ -165,7 +165,7 @@ function SalonAppContent() {
         {/* Can't Visit The Studio? We Can Come To You - Doorstep Home Service */}
         <HomeServiceSection onBookHomeService={handleBookHomeService} />
 
-        {/* Why Choose RV Nails Art - 4 Pillars */}
+        {/* Why Choose RV Nail Studio - 4 Pillars */}
         <WhyChooseUs />
 
         {/* Meet Rohit - About The Artist */}

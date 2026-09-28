@@ -49,7 +49,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onClose,
   appointments
 }) => {
-  const { user, isAdmin, loginAsAdminWithCredentials, toggleAdminMode } = useAuth();
+  const { user, isAdmin, loginAsAdminWithCredentials, logout } = useAuth();
   const [gateIdentifier, setGateIdentifier] = useState('');
   const [gatePasskey, setGatePasskey] = useState('');
   const [gateLoading, setGateLoading] = useState(false);
@@ -437,13 +437,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 onSubmit={async (e) => {
                   e.preventDefault();
                   setGateError(null);
-                  if (!gatePasskey.trim()) {
-                    setGateError('Please enter administrator passkey.');
+                  if (!gateIdentifier.trim() || !gatePasskey.trim()) {
+                    setGateError('Please enter administrator email and password.');
                     return;
                   }
                   try {
                     setGateLoading(true);
-                    await loginAsAdminWithCredentials(gateIdentifier, gatePasskey.trim());
+                    await loginAsAdminWithCredentials(gateIdentifier.trim(), gatePasskey.trim());
                   } catch (err: any) {
                     setGateError(err.message || 'Access Denied: Invalid Administrator credentials.');
                   } finally {
@@ -561,14 +561,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
               <button
                 onClick={() => {
-                  toggleAdminMode(false);
+                  logout();
                   onClose();
                 }}
                 className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold shadow-2xs transition-colors"
-                title="Lock portal and return to client site"
+                title="Sign out administrator"
               >
-                <Lock className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Lock Portal</span>
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Sign Out Admin</span>
               </button>
 
               <button
@@ -881,7 +881,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 <div className="flex items-center gap-2 mt-1">
                                   <span className="text-[#57534E] text-[11px]">+91 {apt.phone}</span>
                                   <a
-                                    href={getWhatsAppUrl(`Hi ${apt.fullName}, this is Rohit from RV Nails Art regarding your appointment ${apt.bookingCode} on ${apt.date} at ${apt.timeSlot}.`)}
+                                    href={getWhatsAppUrl(`Hi ${apt.fullName}, this is Rohit from RV Nail Studio regarding your appointment ${apt.bookingCode} on ${apt.date} at ${apt.timeSlot}.`)}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="p-1 rounded-md bg-[#25D366]/10 text-[#15803D] hover:bg-[#25D366]/20 transition-colors"

@@ -6,16 +6,18 @@
       "type": "object",
       "properties": {
         "bookingCode": { "type": "string", "description": "Unique booking reference code (e.g. RV-1048)" },
-        "fullName": { "type": "string", "description": "Customer full name" },
-        "phone": { "type": "string", "description": "Indian contact phone number" },
-        "email": { "type": "string", "description": "Optional email address" },
-        "userId": { "type": "string", "description": "Authenticated user ID if signed in" },
-        "service": { "type": "string", "description": "Selected nail art or manicure service" },
+        "fullName": { "type": "string", "description": "Customer full name", "maxLength": 100 },
+        "phone": { "type": "string", "description": "Indian contact phone number", "maxLength": 15 },
+        "email": { "type": "string", "description": "Optional email address", "maxLength": 120 },
+        "userId": { "type": "string", "description": "Authenticated user ID if signed in", "maxLength": 128 },
+        "service": { "type": "string", "description": "Selected nail art or manicure service", "maxLength": 100 },
         "serviceType": { "type": "string", "enum": ["Studio Visit", "Home Service"], "description": "Type of service location" },
-        "address": { "type": "string", "description": "Doorstep address if home service" },
-        "date": { "type": "string", "description": "Appointment date (YYYY-MM-DD)" },
-        "timeSlot": { "type": "string", "description": "Selected appointment time slot" },
-        "notes": { "type": "string", "description": "Special nail design requests or preferences" },
+        "address": { "type": "string", "description": "Doorstep address if home service", "maxLength": 300 },
+        "nailDesign": { "type": "string", "description": "Selected nail design", "maxLength": 100 },
+        "date": { "type": "string", "description": "Appointment date (YYYY-MM-DD)", "maxLength": 12 },
+        "timeSlot": { "type": "string", "description": "Selected appointment time slot", "maxLength": 20 },
+        "notes": { "type": "string", "description": "Special nail design requests or preferences", "maxLength": 500 },
+        "adminNotes": { "type": "string", "description": "Internal notes added by salon staff", "maxLength": 500 },
         "status": { "type": "string", "enum": ["pending", "confirmed", "in_progress", "completed", "cancelled"], "description": "Booking status" },
         "amount": { "type": "number", "description": "Price/estimated service total in INR" },
         "paymentStatus": { "type": "string", "enum": ["unpaid", "deposit_paid", "paid"], "description": "Payment status" },
@@ -26,20 +28,44 @@
     },
     "users": {
       "title": "Users",
-      "description": "Registered clients and administrators",
+      "description": "Registered clients and administrators profile records",
       "type": "object",
       "properties": {
-        "uid": { "type": "string", "description": "Firebase Auth UID" },
-        "email": { "type": "string", "description": "User email address" },
-        "displayName": { "type": "string", "description": "Display name" },
-        "phone": { "type": "string", "description": "Phone number" },
+        "uid": { "type": "string", "description": "Firebase Auth UID", "maxLength": 128 },
+        "email": { "type": "string", "description": "User email address", "maxLength": 120 },
+        "displayName": { "type": "string", "description": "Display name", "maxLength": 100 },
+        "phone": { "type": "string", "description": "Phone number", "maxLength": 20 },
         "role": { "type": "string", "enum": ["client", "admin"], "description": "User access role" },
-        "authProvider": { "type": "string", "description": "Authentication method (google.com, password, etc)" },
-        "passwordHash": { "type": "string", "description": "Hashed password for fallback authentication" },
+        "authProvider": { "type": "string", "description": "Authentication method (google.com, password, etc)", "maxLength": 50 },
         "lastLoginAt": { "type": "string", "description": "Timestamp of most recent login" },
-        "createdAt": { "type": "string", "description": "Account registration timestamp" }
+        "createdAt": { "type": "string", "description": "Account registration timestamp" },
+        "updatedAt": { "type": "string", "description": "Account update timestamp" }
       },
       "required": ["uid", "role", "createdAt"]
+    },
+    "slotReservations": {
+      "title": "Slot Reservations",
+      "description": "Atomic mutex documents to prevent double booking of time slots",
+      "type": "object",
+      "properties": {
+        "appointmentId": { "type": "string", "description": "Linked appointment document ID", "maxLength": 128 },
+        "bookingCode": { "type": "string", "description": "Linked booking code", "maxLength": 50 },
+        "date": { "type": "string", "description": "Appointment date (YYYY-MM-DD)", "maxLength": 12 },
+        "timeSlot": { "type": "string", "description": "Appointment time slot", "maxLength": 20 },
+        "createdAt": { "type": "string", "description": "Reservation timestamp" }
+      },
+      "required": ["appointmentId", "bookingCode", "date", "timeSlot", "createdAt"]
+    },
+    "admins": {
+      "title": "Admins",
+      "description": "Authorized salon managers and administrators",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "description": "Administrator email address", "maxLength": 120 },
+        "name": { "type": "string", "description": "Administrator full name", "maxLength": 100 },
+        "assignedAt": { "type": "string", "description": "Timestamp when admin status was granted" }
+      },
+      "required": ["email", "assignedAt"]
     }
   },
   "firestore": {
@@ -50,6 +76,14 @@
     "/users/{userId}": {
       "schema": "users",
       "description": "Registered clients and administrators"
+    },
+    "/slot_reservations/{slotId}": {
+      "schema": "slotReservations",
+      "description": "Atomic reservation documents per date/slot to prevent collisions"
+    },
+    "/admins/{adminId}": {
+      "schema": "admins",
+      "description": "Verified salon administrators lookup"
     }
   }
 }

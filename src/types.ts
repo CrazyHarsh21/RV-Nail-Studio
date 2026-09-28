@@ -70,8 +70,16 @@ export interface UserProfile {
   phone?: string | null;
   role: 'client' | 'admin';
   authProvider?: string;
-  passwordHash?: string;
   lastLoginAt?: string;
+  createdAt: string;
+}
+
+export interface SlotReservation {
+  id: string;
+  appointmentId: string;
+  bookingCode: string;
+  date: string;
+  timeSlot: string;
   createdAt: string;
 }
 

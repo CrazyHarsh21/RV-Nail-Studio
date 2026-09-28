@@ -18,7 +18,7 @@ import {
 import confetti from 'canvas-confetti';
 import { TIME_SLOTS, SERVICES, getWhatsAppUrl } from '../data/nailData';
 import { Appointment, AppointmentFormData } from '../types';
-import { bookAppointmentInDatabase } from '../lib/firebase';
+import { bookAppointmentInDatabase, getReservedSlotsForDate } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 
 interface AppointmentModalProps {
@@ -60,6 +60,20 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [createdBooking, setCreatedBooking] = useState<Appointment | null>(null);
   const [bookingError, setBookingError] = useState<string | null>(null);
+  const [reservedSlots, setReservedSlots] = useState<string[]>([]);
+
+  // Fetch reserved slots for chosen date to prevent double bookings
+  useEffect(() => {
+    if (formData.date) {
+      getReservedSlotsForDate(formData.date).then((slots) => {
+        setReservedSlots(slots);
+      }).catch(() => {
+        setReservedSlots([]);
+      });
+    } else {
+      setReservedSlots([]);
+    }
+  }, [formData.date]);
 
   // Sync initial values when modal opens
   useEffect(() => {
@@ -378,11 +392,14 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                         <option value="" disabled>
                           Select preferred slot
                         </option>
-                        {TIME_SLOTS.map((slot) => (
-                          <option key={slot} value={slot}>
-                            {slot}
-                          </option>
-                        ))}
+                        {TIME_SLOTS.map((slot) => {
+                          const isBooked = reservedSlots.includes(slot);
+                          return (
+                            <option key={slot} value={slot} disabled={isBooked}>
+                              {slot} {isBooked ? '— [Reserved]' : ''}
+                            </option>
+                          );
+                        })}
                       </select>
                       <Clock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#A8A29E] pointer-events-none" />
                     </div>

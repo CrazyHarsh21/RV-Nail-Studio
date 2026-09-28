@@ -67,6 +67,8 @@ export const NailDetailModal: React.FC<NailDetailModalProps> = ({
                 <img
                   src={design.image}
                   alt={design.name}
+                  loading="lazy"
+                  decoding="async"
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover object-center"
                 />
