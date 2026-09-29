@@ -5,7 +5,9 @@ import {
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   sendPasswordResetEmail,
-  signInWithPopup, 
+  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signOut,
   updateProfile
 } from 'firebase/auth';
@@ -32,7 +34,7 @@ interface AuthContextType {
   loginWithPhoneOtp: (phone: string, otp: string, name?: string) => Promise<void>;
   resetPasswordWithOtp: (phone: string, otp: string, newPass: string) => Promise<void>;
   loginAsAdminWithCredentials: (email: string, pass: string) => Promise<void>;
-  loginWithGoogle: () => Promise<void>;
+  loginWithGoogle: () => Promise<{ redirected?: boolean } | void>;
   logout: () => Promise<void>;
 }
 
@@ -56,24 +58,71 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
+    let isSubscribed = true;
+
+    // 1. Process Google mobile redirect result if returning from account sign-in
+    const handleRedirectResult = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result && result.user && isSubscribed) {
+          const redirectUser = result.user;
+          setUser(redirectUser);
+          const adminStatus = isUserAdmin(redirectUser);
+          setIsAdmin(adminStatus);
+          if (adminStatus) {
+            await ensureAdminRecord(redirectUser);
+          }
+          await saveUserProfileToFirestore({
+            uid: redirectUser.uid,
+            email: redirectUser.email,
+            displayName: redirectUser.displayName,
+            phone: redirectUser.phoneNumber,
+            role: adminStatus ? 'admin' : 'client',
+            authProvider: 'google.com',
+            lastLoginAt: new Date().toISOString()
+          });
+          await linkAppointmentsToUser(redirectUser);
+          await fetchUserPastBookingsFromFirestore(redirectUser.uid, redirectUser.email || undefined);
+        }
+      } catch (redirectErr: any) {
+        console.warn('Redirect sign-in notice:', redirectErr);
+      }
+    };
+    handleRedirectResult();
+
+    // 2. Continuous Auth state observer
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser) {
+      if (currentUser && isSubscribed) {
         setUser(currentUser);
         const adminStatus = isUserAdmin(currentUser);
         setIsAdmin(adminStatus);
         if (adminStatus) {
           await ensureAdminRecord(currentUser);
         }
+        await saveUserProfileToFirestore({
+          uid: currentUser.uid,
+          email: currentUser.email,
+          displayName: currentUser.displayName,
+          phone: currentUser.phoneNumber,
+          role: adminStatus ? 'admin' : 'client',
+          authProvider: currentUser.providerData?.[0]?.providerId || 'google.com',
+          lastLoginAt: new Date().toISOString()
+        });
         await linkAppointmentsToUser(currentUser);
         await fetchUserPastBookingsFromFirestore(currentUser.uid, currentUser.email || undefined);
-      } else {
+      } else if (isSubscribed) {
         setUser(null);
         setIsAdmin(false);
       }
-      setLoading(false);
+      if (isSubscribed) {
+        setLoading(false);
+      }
     });
 
-    return () => unsubscribe();
+    return () => {
+      isSubscribed = false;
+      unsubscribe();
+    };
   }, []);
 
   // Standard Client/Admin Sign In via Firebase Authentication
@@ -249,30 +298,66 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Google Authentication with Popup
-  const loginWithGoogle = async () => {
-    const res = await signInWithPopup(auth, googleProvider);
-    const currentUser = res.user;
-    setUser(currentUser);
-    const adminCheck = isUserAdmin(currentUser);
-    setIsAdmin(adminCheck);
+  // Google Authentication with Mobile-Friendly Redirect & Popup Fallback
+  const loginWithGoogle = async (): Promise<{ redirected?: boolean } | void> => {
+    const isMobile = typeof window !== 'undefined' && (
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+      (window.innerWidth <= 820 && ('ontouchstart' in window || (navigator.maxTouchPoints && navigator.maxTouchPoints > 0)))
+    );
+    const isInIframe = typeof window !== 'undefined' && window.self !== window.top;
 
-    if (adminCheck) {
-      await ensureAdminRecord(currentUser);
+    // Standalone mobile browsers (iOS Safari / Android Chrome / WebViews) frequently block
+    // popups or fail cross-window token postMessage. On standalone mobile, prefer signInWithRedirect.
+    if (isMobile && !isInIframe) {
+      try {
+        await signInWithRedirect(auth, googleProvider);
+        return { redirected: true };
+      } catch (redirectErr) {
+        console.warn('signInWithRedirect could not launch, attempting popup fallback:', redirectErr);
+      }
     }
 
-    await saveUserProfileToFirestore({
-      uid: currentUser.uid,
-      email: currentUser.email,
-      displayName: currentUser.displayName,
-      phone: currentUser.phoneNumber,
-      role: adminCheck ? 'admin' : 'client',
-      authProvider: 'google.com',
-      lastLoginAt: new Date().toISOString()
-    });
+    try {
+      const res = await signInWithPopup(auth, googleProvider);
+      const currentUser = res.user;
+      setUser(currentUser);
+      const adminCheck = isUserAdmin(currentUser);
+      setIsAdmin(adminCheck);
 
-    await linkAppointmentsToUser(currentUser);
-    await fetchUserPastBookingsFromFirestore(currentUser.uid, currentUser.email || undefined);
+      if (adminCheck) {
+        await ensureAdminRecord(currentUser);
+      }
+
+      await saveUserProfileToFirestore({
+        uid: currentUser.uid,
+        email: currentUser.email,
+        displayName: currentUser.displayName,
+        phone: currentUser.phoneNumber,
+        role: adminCheck ? 'admin' : 'client',
+        authProvider: 'google.com',
+        lastLoginAt: new Date().toISOString()
+      });
+
+      await linkAppointmentsToUser(currentUser);
+      await fetchUserPastBookingsFromFirestore(currentUser.uid, currentUser.email || undefined);
+      return { redirected: false };
+    } catch (popupError: any) {
+      // If popup was blocked or failed and we are not constrained to an iframe, redirect
+      const canFallbackToRedirect = !isInIframe && (
+        popupError?.code === 'auth/popup-blocked' ||
+        popupError?.code === 'auth/cancelled-popup-request' ||
+        popupError?.code === 'auth/operation-not-supported-in-this-environment' ||
+        (isMobile && popupError?.code === 'auth/popup-closed-by-user')
+      );
+
+      if (canFallbackToRedirect) {
+        console.warn('Popup blocked or dropped on mobile, switching to signInWithRedirect...', popupError);
+        await signInWithRedirect(auth, googleProvider);
+        return { redirected: true };
+      }
+
+      throw popupError;
+    }
   };
 
   const logout = async () => {

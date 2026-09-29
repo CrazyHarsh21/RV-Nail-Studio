@@ -58,6 +58,9 @@ try {
 export const db = dbInstance;
 export const auth: Auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({
+  prompt: 'select_account'
+});
 
 // Local storage key for offline client guest references only
 const GUEST_CODES_KEY = 'rv_guest_booking_codes';
