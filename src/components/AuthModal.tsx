@@ -90,18 +90,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     try {
       setLoading(true);
       await loginWithEmail(email.trim(), password);
-      setSuccessMsg('Welcome back! Signed in successfully.');
+      setSuccessMsg('Signed in successfully! Welcome back.');
       setTimeout(() => {
         onClose();
       }, 600);
     } catch (err: any) {
-      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-        setError('Incorrect email or password. Please check your credentials.');
-      } else if (err.code === 'auth/user-not-found') {
-        setError('No account found with this email. Please Sign Up to create one.');
-      } else {
-        setError(err.message || 'Sign in failed. Please check your internet connection.');
-      }
+      setError(err?.message || 'Sign in failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }
@@ -169,17 +163,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
-  // 4. Google One-Click Sign In / Sign Up (Mobile & Desktop optimized)
+  // 4. Google One-Click Sign In / Sign Up
   const handleGoogleAuth = async () => {
     setError(null);
     setSuccessMsg(null);
     try {
       setGoogleLoading(true);
-      const res = await loginWithGoogle();
-      if (res?.redirected) {
-        setSuccessMsg('Redirecting to Google securely...');
-        return;
-      }
+      await loginWithGoogle();
       setSuccessMsg('Authenticated with Google successfully!');
       setTimeout(() => {
         onClose();
@@ -187,9 +177,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     } catch (err: any) {
       console.warn('Google auth error in modal:', err);
       if (err.code === 'auth/popup-closed-by-user') {
-        setError('Sign-in cancelled. Please tap "Continue with Google" again.');
+        setError('Sign-in was cancelled. Please tap "Continue with Google" again.');
       } else if (err.code === 'auth/popup-blocked') {
-        setError('Pop-up was blocked. Please tap again to proceed with direct sign-in.');
+        setError('Pop-up was blocked by your browser. Please tap the button again or allow pop-ups for this site.');
+      } else if (err.code === 'auth/unauthorized-domain') {
+        setError('Domain not authorized in Firebase Auth. In Firebase Console, add ' + window.location.hostname + ' to Authorized Domains.');
       } else if (err.code === 'auth/network-request-failed') {
         setError('Network error. Please check your connection and try again.');
       } else {

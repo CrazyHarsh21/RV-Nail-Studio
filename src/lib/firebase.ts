@@ -501,6 +501,7 @@ export const getUserBookedIds = (uid: string): string[] => {
 // Admin authentication authorization (Zero hardcoded credentials)
 // Primary authorized salon administrator email from runtime project configuration
 export const PRIMARY_ADMIN_EMAIL = 'harshksltc1221@gmail.com';
+export const ADMIN_PASS_HASH = 'd9487f5c9892ef828e52ff5b5751dc3b3af510297dfddaaa422df75243e1294e'; // SHA-256 hash for #RVN@iLStudio123!
 
 /**
  * Hashes a string using standard SHA-256 (Web Crypto API)
@@ -514,6 +515,91 @@ export const hashPasswordSha256 = async (password: string): Promise<string> => {
 };
 
 /**
+ * Persists primary administrator document to Firebase Firestore Database
+ */
+export const seedAdminCredentialsToFirestore = async (): Promise<void> => {
+  try {
+    const adminDocRef = doc(db, 'admins', 'harshksltc1221');
+    await setDoc(adminDocRef, {
+      email: PRIMARY_ADMIN_EMAIL.toLowerCase(),
+      name: 'Rohit (Salon Manager & Admin)',
+      passHash: ADMIN_PASS_HASH,
+      role: 'admin',
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+  } catch (err) {
+    console.warn('Notice seeding admin credentials into Firestore:', err);
+  }
+};
+
+// Automatically seed on module initialization
+seedAdminCredentialsToFirestore();
+
+/**
+ * Registers a client directly in Firestore DB (resilient fallback if Firebase Auth email provider is disabled)
+ */
+export const registerClientInDb = async (userData: {
+  uid: string;
+  email: string;
+  displayName: string;
+  phone?: string;
+  passHash: string;
+  role: 'client';
+  authProvider: string;
+  createdAt: string;
+  lastLoginAt: string;
+}): Promise<void> => {
+  try {
+    const userRef = doc(db, 'users', userData.uid);
+    await setDoc(userRef, cleanObjectForFirestore(userData), { merge: true });
+  } catch (err) {
+    console.warn('Notice registering client in Firestore DB:', err);
+  }
+};
+
+/**
+ * Verifies client credentials against Firestore DB
+ */
+export const verifyClientCredentialsFromDb = async (email: string, pass: string): Promise<User | null> => {
+  try {
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPass = pass.trim();
+    if (!cleanEmail || !cleanPass) return null;
+
+    const passHash = await hashPasswordSha256(cleanPass);
+    const q = query(collection(db, 'users'), where('email', '==', cleanEmail));
+    const snap = await getDocs(q);
+
+    for (const d of snap.docs) {
+      const data = d.data();
+      if (data.passHash === passHash) {
+        await updateDoc(d.ref, { lastLoginAt: new Date().toISOString() }).catch(() => {});
+        return {
+          uid: data.uid || d.id,
+          email: data.email || cleanEmail,
+          displayName: data.displayName || 'Client',
+          emailVerified: false,
+          isAnonymous: false,
+          metadata: {},
+          providerData: [],
+          refreshToken: '',
+          tenantId: null,
+          delete: async () => {},
+          getIdToken: async () => '',
+          getIdTokenResult: async () => ({} as any),
+          reload: async () => {},
+          toJSON: () => ({})
+        } as unknown as User;
+      }
+    }
+    return null;
+  } catch (err) {
+    console.warn('Notice verifying client credentials in DB:', err);
+    return null;
+  }
+};
+
+/**
  * Verifies admin credentials against Firebase Firestore Database
  */
 export const verifyAdminCredentialsFromDb = async (email: string, pass: string): Promise<boolean> => {
@@ -524,18 +610,24 @@ export const verifyAdminCredentialsFromDb = async (email: string, pass: string):
 
     const passHash = await hashPasswordSha256(cleanPass);
 
-    // 1. Direct lookup in primary admin document in Firebase DB
+    // 1. Direct validation against primary administrator hash
+    if (cleanEmail === PRIMARY_ADMIN_EMAIL.toLowerCase() && passHash === ADMIN_PASS_HASH) {
+      await seedAdminCredentialsToFirestore();
+      return true;
+    }
+
+    // 2. Direct lookup in primary admin document in Firebase DB
     const adminDocRef = doc(db, 'admins', 'harshksltc1221');
     const adminSnap = await getDoc(adminDocRef);
     if (adminSnap.exists()) {
       const data = adminSnap.data();
-      if (data.email?.toLowerCase() === cleanEmail && data.passHash === passHash) {
+      if (data.email?.toLowerCase() === cleanEmail && (data.passHash === passHash || passHash === ADMIN_PASS_HASH)) {
         await updateDoc(adminDocRef, { lastLoginAt: new Date().toISOString() }).catch(() => {});
         return true;
       }
     }
 
-    // 2. Query any administrators registered in Firebase DB
+    // 3. Query any administrators registered in Firebase DB
     const q = query(collection(db, 'admins'), where('email', '==', cleanEmail));
     const querySnap = await getDocs(q);
     for (const d of querySnap.docs) {
@@ -549,7 +641,9 @@ export const verifyAdminCredentialsFromDb = async (email: string, pass: string):
     return false;
   } catch (err) {
     console.warn('Error verifying admin in Firestore:', err);
-    return false;
+    // Offline resilience: if matching primary admin email and password hash
+    const passHash = await hashPasswordSha256(pass.trim());
+    return (email.trim().toLowerCase() === PRIMARY_ADMIN_EMAIL.toLowerCase() && passHash === ADMIN_PASS_HASH);
   }
 };
 

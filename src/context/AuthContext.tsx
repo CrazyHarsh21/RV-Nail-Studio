@@ -6,8 +6,6 @@ import {
   createUserWithEmailAndPassword, 
   sendPasswordResetEmail,
   signInWithPopup,
-  signInWithRedirect,
-  getRedirectResult,
   signOut,
   updateProfile
 } from 'firebase/auth';
@@ -20,6 +18,9 @@ import {
   saveUserProfileToFirestore,
   fetchUserPastBookingsFromFirestore,
   verifyAdminCredentialsFromDb,
+  verifyClientCredentialsFromDb,
+  registerClientInDb,
+  hashPasswordSha256,
   PRIMARY_ADMIN_EMAIL
 } from '../lib/firebase';
 
@@ -34,7 +35,7 @@ interface AuthContextType {
   loginWithPhoneOtp: (phone: string, otp: string, name?: string) => Promise<void>;
   resetPasswordWithOtp: (phone: string, otp: string, newPass: string) => Promise<void>;
   loginAsAdminWithCredentials: (email: string, pass: string) => Promise<void>;
-  loginWithGoogle: () => Promise<{ redirected?: boolean } | void>;
+  loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -60,37 +61,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     let isSubscribed = true;
 
-    // 1. Process Google mobile redirect result if returning from account sign-in
-    const handleRedirectResult = async () => {
-      try {
-        const result = await getRedirectResult(auth);
-        if (result && result.user && isSubscribed) {
-          const redirectUser = result.user;
-          setUser(redirectUser);
-          const adminStatus = isUserAdmin(redirectUser);
-          setIsAdmin(adminStatus);
-          if (adminStatus) {
-            await ensureAdminRecord(redirectUser);
-          }
-          await saveUserProfileToFirestore({
-            uid: redirectUser.uid,
-            email: redirectUser.email,
-            displayName: redirectUser.displayName,
-            phone: redirectUser.phoneNumber,
-            role: adminStatus ? 'admin' : 'client',
-            authProvider: 'google.com',
-            lastLoginAt: new Date().toISOString()
-          });
-          await linkAppointmentsToUser(redirectUser);
-          await fetchUserPastBookingsFromFirestore(redirectUser.uid, redirectUser.email || undefined);
-        }
-      } catch (redirectErr: any) {
-        console.warn('Redirect sign-in notice:', redirectErr);
-      }
-    };
-    handleRedirectResult();
-
-    // 2. Continuous Auth state observer
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser && isSubscribed) {
         setUser(currentUser);
@@ -125,47 +95,131 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  // Standard Client/Admin Sign In via Firebase Authentication
+  // Standard Client/Admin Sign In (Supports Firebase Auth + Admin DB + Client DB fallback)
   const loginWithEmail = async (email: string, pass: string) => {
     const normalizedEmail = email.trim().toLowerCase();
-    const res = await signInWithEmailAndPassword(auth, normalizedEmail, pass);
-    const currentUser = res.user;
-    setUser(currentUser);
-    const adminCheck = isUserAdmin(currentUser);
-    setIsAdmin(adminCheck);
-    if (adminCheck) {
-      await ensureAdminRecord(currentUser);
+    const cleanPass = pass.trim();
+
+    if (!normalizedEmail || !cleanPass) {
+      throw new Error('Please enter both your email address and password.');
     }
-    await linkAppointmentsToUser(currentUser);
-    await fetchUserPastBookingsFromFirestore(currentUser.uid, currentUser.email || undefined);
+
+    // 1. If administrator email, route through verified admin credential checker
+    if (normalizedEmail === PRIMARY_ADMIN_EMAIL.toLowerCase() || normalizedEmail === 'rohit@rvnailstudio.com') {
+      await loginAsAdminWithCredentials(normalizedEmail, cleanPass);
+      return;
+    }
+
+    // 2. Try Firebase Auth Email/Password
+    try {
+      const res = await signInWithEmailAndPassword(auth, normalizedEmail, cleanPass);
+      const currentUser = res.user;
+      setUser(currentUser);
+      const adminCheck = isUserAdmin(currentUser);
+      setIsAdmin(adminCheck);
+      if (adminCheck) {
+        await ensureAdminRecord(currentUser);
+      }
+      await linkAppointmentsToUser(currentUser);
+      await fetchUserPastBookingsFromFirestore(currentUser.uid, currentUser.email || undefined);
+      return;
+    } catch (firebaseErr: any) {
+      // 3. If Firebase Auth email provider is disabled (operation-not-allowed) or user is in DB, check Firestore
+      const dbClientUser = await verifyClientCredentialsFromDb(normalizedEmail, cleanPass);
+      if (dbClientUser) {
+        setUser(dbClientUser);
+        setIsAdmin(false);
+        await linkAppointmentsToUser(dbClientUser);
+        await fetchUserPastBookingsFromFirestore(dbClientUser.uid, normalizedEmail);
+        return;
+      }
+
+      if (firebaseErr.code === 'auth/wrong-password' || firebaseErr.code === 'auth/invalid-credential') {
+        throw new Error('Incorrect password. Please verify and try again.');
+      } else if (firebaseErr.code === 'auth/user-not-found') {
+        throw new Error('No registered account found with this email. Please Sign Up to create one.');
+      } else if (firebaseErr.code === 'auth/operation-not-allowed') {
+        throw new Error('Email login is not enabled in Firebase Console. Please sign in with Google or create an account in Sign Up.');
+      }
+      throw firebaseErr;
+    }
   };
 
-  // Client Account Registration via Firebase Authentication (Zero client-side password storage)
+  // Client Account Registration (Supports Firebase Auth + Firestore DB fallback)
   const signupWithEmail = async (email: string, pass: string, name: string, phone?: string) => {
     const normalizedEmail = email.trim().toLowerCase();
-    const res = await createUserWithEmailAndPassword(auth, normalizedEmail, pass);
-    const authUser = res.user;
+    const cleanPass = pass.trim();
 
-    if (name) {
-      await updateProfile(authUser, { displayName: name.trim() });
+    if (!normalizedEmail || !cleanPass) {
+      throw new Error('Please enter a valid email and password.');
     }
 
-    // Save profile to Firestore with client role (Never admin)
-    await saveUserProfileToFirestore({
-      uid: authUser.uid,
-      email: authUser.email,
-      displayName: name.trim() || authUser.displayName || '',
-      phone: phone?.trim() || '',
-      role: 'client',
-      authProvider: 'password',
-      lastLoginAt: new Date().toISOString(),
-      createdAt: new Date().toISOString()
-    });
+    try {
+      const res = await createUserWithEmailAndPassword(auth, normalizedEmail, cleanPass);
+      const authUser = res.user;
 
-    setUser(authUser);
-    setIsAdmin(false);
-    await linkAppointmentsToUser(authUser);
-    await fetchUserPastBookingsFromFirestore(authUser.uid, authUser.email || undefined);
+      if (name) {
+        await updateProfile(authUser, { displayName: name.trim() });
+      }
+
+      await saveUserProfileToFirestore({
+        uid: authUser.uid,
+        email: authUser.email,
+        displayName: name.trim() || authUser.displayName || '',
+        phone: phone?.trim() || '',
+        role: 'client',
+        authProvider: 'password',
+        lastLoginAt: new Date().toISOString(),
+        createdAt: new Date().toISOString()
+      });
+
+      setUser(authUser);
+      setIsAdmin(false);
+      await linkAppointmentsToUser(authUser);
+      await fetchUserPastBookingsFromFirestore(authUser.uid, authUser.email || undefined);
+    } catch (authErr: any) {
+      // If Firebase Auth Email provider is not enabled in console, save directly to Firestore DB
+      if (authErr.code === 'auth/operation-not-allowed' || authErr.code === 'auth/network-request-failed') {
+        const passHash = await hashPasswordSha256(cleanPass);
+        const uid = 'client_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
+
+        await registerClientInDb({
+          uid,
+          email: normalizedEmail,
+          displayName: name.trim(),
+          phone: phone?.trim() || '',
+          passHash,
+          role: 'client',
+          authProvider: 'firestore-account',
+          createdAt: new Date().toISOString(),
+          lastLoginAt: new Date().toISOString()
+        });
+
+        const clientSession = {
+          uid,
+          email: normalizedEmail,
+          displayName: name.trim(),
+          emailVerified: false,
+          isAnonymous: false,
+          metadata: {},
+          providerData: [],
+          refreshToken: '',
+          tenantId: null,
+          delete: async () => {},
+          getIdToken: async () => '',
+          getIdTokenResult: async () => ({} as any),
+          reload: async () => {},
+          toJSON: () => ({})
+        } as unknown as User;
+
+        setUser(clientSession);
+        setIsAdmin(false);
+        await linkAppointmentsToUser(clientSession);
+        await fetchUserPastBookingsFromFirestore(uid, normalizedEmail);
+        return;
+      }
+      throw authErr;
+    }
   };
 
   // Password recovery via Firebase email
@@ -298,25 +352,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Google Authentication with Mobile-Friendly Redirect & Popup Fallback
-  const loginWithGoogle = async (): Promise<{ redirected?: boolean } | void> => {
-    const isMobile = typeof window !== 'undefined' && (
-      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-      (window.innerWidth <= 820 && ('ontouchstart' in window || (navigator.maxTouchPoints && navigator.maxTouchPoints > 0)))
-    );
-    const isInIframe = typeof window !== 'undefined' && window.self !== window.top;
-
-    // Standalone mobile browsers (iOS Safari / Android Chrome / WebViews) frequently block
-    // popups or fail cross-window token postMessage. On standalone mobile, prefer signInWithRedirect.
-    if (isMobile && !isInIframe) {
-      try {
-        await signInWithRedirect(auth, googleProvider);
-        return { redirected: true };
-      } catch (redirectErr) {
-        console.warn('signInWithRedirect could not launch, attempting popup fallback:', redirectErr);
-      }
-    }
-
+  // Google Authentication with Popup (Standard and reliable for Cloud Run & AI Studio)
+  const loginWithGoogle = async (): Promise<void> => {
     try {
       const res = await signInWithPopup(auth, googleProvider);
       const currentUser = res.user;
@@ -340,22 +377,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       await linkAppointmentsToUser(currentUser);
       await fetchUserPastBookingsFromFirestore(currentUser.uid, currentUser.email || undefined);
-      return { redirected: false };
     } catch (popupError: any) {
-      // If popup was blocked or failed and we are not constrained to an iframe, redirect
-      const canFallbackToRedirect = !isInIframe && (
-        popupError?.code === 'auth/popup-blocked' ||
-        popupError?.code === 'auth/cancelled-popup-request' ||
-        popupError?.code === 'auth/operation-not-supported-in-this-environment' ||
-        (isMobile && popupError?.code === 'auth/popup-closed-by-user')
-      );
-
-      if (canFallbackToRedirect) {
-        console.warn('Popup blocked or dropped on mobile, switching to signInWithRedirect...', popupError);
-        await signInWithRedirect(auth, googleProvider);
-        return { redirected: true };
-      }
-
+      console.warn('Google popup error:', popupError);
       throw popupError;
     }
   };
