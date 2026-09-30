@@ -16,6 +16,7 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { firebaseConfig } from '../lib/firebase';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -181,7 +182,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       } else if (err.code === 'auth/popup-blocked') {
         setError('Pop-up was blocked by your browser. Please tap the button again or allow pop-ups for this site.');
       } else if (err.code === 'auth/unauthorized-domain') {
-        setError('Domain not authorized in Firebase Auth. In Firebase Console, add ' + window.location.hostname + ' to Authorized Domains.');
+        const currentHost = typeof window !== 'undefined' ? window.location.hostname : 'rv-nails-studio-001.vercel.app';
+        setError(`Domain "${currentHost}" is not yet in Firebase Authorized Domains. In Firebase Console for project "${firebaseConfig.projectId}", go to Authentication > Settings > Authorized Domains and add "${currentHost}".`);
       } else if (err.code === 'auth/network-request-failed') {
         setError('Network error. Please check your connection and try again.');
       } else {

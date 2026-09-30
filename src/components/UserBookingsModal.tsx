@@ -293,15 +293,24 @@ export const UserBookingsModal: React.FC<UserBookingsModalProps> = ({
             {/* Account Status Strip */}
             <div className="mt-3.5 p-2.5 rounded-2xl bg-white border border-[#E7DFD5] flex items-center justify-between text-xs">
               {user ? (
-                <div className="flex items-center gap-2 text-stone-800">
-                  <div className="w-6 h-6 rounded-full bg-[#FEF3C7] text-[#B45309] flex items-center justify-center font-bold text-[11px]">
-                    {user.displayName ? user.displayName.charAt(0).toUpperCase() : 'U'}
-                  </div>
-                  <div className="leading-tight">
-                    <span className="font-bold text-[#1C1917] block">
+                <div className="flex items-center gap-3 text-stone-800 min-w-0">
+                  {user.photoURL ? (
+                    <img 
+                      src={user.photoURL} 
+                      alt={user.displayName || 'Profile'} 
+                      className="w-8 h-8 rounded-full object-cover border border-[#D4AF37] shadow-2xs shrink-0" 
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-[#FEF3C7] text-[#B45309] flex items-center justify-center font-bold text-xs shrink-0">
+                      {user.displayName ? user.displayName.charAt(0).toUpperCase() : (user.email ? user.email.charAt(0).toUpperCase() : 'U')}
+                    </div>
+                  )}
+                  <div className="leading-tight overflow-hidden min-w-0">
+                    <span className="font-bold text-[#1C1917] block truncate">
                       {user.displayName || 'Customer Account'}
                     </span>
-                    <span className="text-[10px] text-[#78716C]">
+                    <span className="text-[10px] text-[#78716C] block truncate">
                       {user.email || 'Logged in'} • Data isolated & saved to your account
                     </span>
                   </div>

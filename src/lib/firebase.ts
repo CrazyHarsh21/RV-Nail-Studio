@@ -40,14 +40,27 @@ export const getEstimatedPrice = (serviceName: string, serviceType: string): num
   return base + travelFee;
 };
 
+// Firebase Configuration for RV Nails Studio
+// Supports environment variables (for custom Vercel deployments) and defaults from firebase-applet-config.json
+export const firebaseConfig = {
+  apiKey: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIREBASE_API_KEY) || firebaseConfigJson.apiKey || '',
+  authDomain: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIREBASE_AUTH_DOMAIN) || firebaseConfigJson.authDomain || 'rv-nails-studio.firebaseapp.com',
+  projectId: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIREBASE_PROJECT_ID) || firebaseConfigJson.projectId || 'rv-nails-studio',
+  storageBucket: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIREBASE_STORAGE_BUCKET) || firebaseConfigJson.storageBucket || 'rv-nails-studio.firebasestorage.app',
+  messagingSenderId: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIREBASE_MESSAGING_SENDER_ID) || firebaseConfigJson.messagingSenderId || '',
+  appId: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIREBASE_APP_ID) || firebaseConfigJson.appId || '',
+  measurementId: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIREBASE_MEASUREMENT_ID) || firebaseConfigJson.measurementId || '',
+  firestoreDatabaseId: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIRESTORE_DATABASE_ID) || firebaseConfigJson.firestoreDatabaseId || '(default)',
+};
+
 // Initialize Firebase App
-const app = !getApps().length ? initializeApp(firebaseConfigJson) : getApp();
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 // Initialize Firestore
 let dbInstance: Firestore;
 try {
-  if (firebaseConfigJson.firestoreDatabaseId && firebaseConfigJson.firestoreDatabaseId !== '(default)') {
-    dbInstance = getFirestore(app, firebaseConfigJson.firestoreDatabaseId);
+  if (firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== '(default)') {
+    dbInstance = getFirestore(app, firebaseConfig.firestoreDatabaseId);
   } else {
     dbInstance = getFirestore(app);
   }

@@ -253,6 +253,30 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
+                {user && (
+                  <div className="p-3 bg-amber-50/70 border border-[#FDE68A] rounded-2xl flex items-center gap-3">
+                    {user.photoURL ? (
+                      <img 
+                        src={user.photoURL} 
+                        alt={user.displayName || 'User'} 
+                        className="w-9 h-9 rounded-full object-cover border-2 border-[#D4AF37] shrink-0" 
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="w-9 h-9 rounded-full bg-[#B45309] text-white font-bold text-xs flex items-center justify-center shrink-0">
+                        {user.displayName ? user.displayName.charAt(0).toUpperCase() : 'U'}
+                      </div>
+                    )}
+                    <div className="overflow-hidden min-w-0">
+                      <p className="text-xs font-bold text-stone-900 truncate">
+                        Signed in as {user.displayName || 'Valued Client'}
+                      </p>
+                      <p className="text-[11px] text-stone-600 truncate">
+                        {user.email}
+                      </p>
+                    </div>
+                  </div>
+                )}
                 
                 {/* Full Name & Phone Number in Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
