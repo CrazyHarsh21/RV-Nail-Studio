@@ -13,10 +13,7 @@ import {
   EyeOff, 
   CheckCircle2, 
   RotateCw, 
-  ArrowLeft,
-  Copy,
-  Check,
-  ExternalLink
+  ArrowLeft
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { firebaseConfig } from '../lib/firebase';
@@ -65,8 +62,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [domainErrorHost, setDomainErrorHost] = useState<string | null>(null);
-  const [copiedDomain, setCopiedDomain] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   // Reset states when opened
@@ -74,7 +69,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     if (isOpen) {
       setActiveTab(defaultTab);
       setError(null);
-      setDomainErrorHost(null);
       setSuccessMsg(null);
       setForgotSuccess(null);
       setPassword('');
@@ -184,15 +178,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     } catch (err: any) {
       console.warn('Google auth error in modal:', err);
       if (err.code === 'auth/popup-closed-by-user') {
-        setError('Sign-in was cancelled. Please tap "Continue with Google" again.');
+        setError('Sign-in window was closed. Please try again.');
       } else if (err.code === 'auth/popup-blocked') {
-        setError('Pop-up was blocked by your browser. Please tap the button again or allow pop-ups for this site.');
+        setError('Pop-up was blocked by your browser. Please allow pop-ups for this site and try again.');
       } else if (err.code === 'auth/unauthorized-domain') {
-        const currentHost = typeof window !== 'undefined' ? window.location.hostname : 'rv-nails-studio-001.vercel.app';
-        setDomainErrorHost(currentHost);
-        setError(`Domain "${currentHost}" needs to be added to Firebase Authorized Domains.`);
+        setError(`Domain "${typeof window !== 'undefined' ? window.location.hostname : 'rv-nails-studio-001.vercel.app'}" is not authorized in Firebase Authentication.`);
       } else if (err.code === 'auth/network-request-failed') {
-        setError('Network error. Please check your connection and try again.');
+        setError('Network error. Please check your internet connection and try again.');
       } else {
         setError(err?.message || 'Google authentication could not be completed.');
       }
@@ -324,56 +316,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           <div className="p-6">
             
             {/* Status & Error Alerts */}
-            {domainErrorHost ? (
-              <div className="mb-4 p-4 rounded-2xl bg-amber-50 border border-amber-300 text-amber-950 text-xs space-y-3">
-                <div className="flex items-center gap-2 font-bold text-amber-900">
-                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-                  <span>Domain Authorization Required in Firebase Console</span>
-                </div>
-                <p className="text-[11px] text-stone-700 leading-relaxed">
-                  Firebase Authentication requires external websites to be registered in <strong>Authorized Domains</strong> to allow Google Sign-In.
-                </p>
-                <div className="p-2.5 bg-white rounded-xl border border-amber-200 flex items-center justify-between gap-2">
-                  <span className="font-mono font-bold text-[#B45309] text-[11px] select-all truncate">
-                    {domainErrorHost}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigator.clipboard.writeText(domainErrorHost);
-                      setCopiedDomain(true);
-                      setTimeout(() => setCopiedDomain(false), 2000);
-                    }}
-                    className="px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-[#92400E] rounded-lg text-[10px] font-bold flex items-center gap-1 transition-colors shrink-0"
-                  >
-                    {copiedDomain ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
-                    {copiedDomain ? 'Copied!' : 'Copy Domain'}
-                  </button>
-                </div>
-                <div className="text-[11px] space-y-1 pt-0.5">
-                  <p className="font-bold text-stone-800">Quick 30-Second Fix:</p>
-                  <ol className="list-decimal list-inside space-y-1 text-stone-600 pl-1">
-                    <li>Open <strong>Firebase Console &gt; Authentication &gt; Settings &gt; Authorized domains</strong> for project <strong>{firebaseConfig.projectId}</strong>.</li>
-                    <li>Click <strong>&quot;Add domain&quot;</strong> and paste <code className="bg-amber-100 px-1 py-0.5 rounded font-mono text-[10px]">{domainErrorHost}</code>.</li>
-                    <li>Click <strong>Save</strong>. Google Sign-In will work immediately!</li>
-                  </ol>
-                </div>
-                <a
-                  href={`https://console.firebase.google.com/project/${firebaseConfig.projectId}/authentication/settings`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#B45309] hover:bg-[#92400E] text-white font-bold text-[11px] transition-all shadow-xs"
-                >
-                  <span>Open Firebase Console Settings</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </a>
-              </div>
-            ) : error ? (
+            {error && (
               <div className="mb-4 p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-2">
                 <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
                 <div className="flex-1">{error}</div>
               </div>
-            ) : null}
+            )}
 
             {successMsg && (
               <div className="mb-4 p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2">
