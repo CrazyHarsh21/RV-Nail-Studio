@@ -369,6 +369,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         uid: currentUser.uid,
         email: currentUser.email,
         displayName: currentUser.displayName,
+        photoURL: currentUser.photoURL,
         phone: currentUser.phoneNumber,
         role: adminCheck ? 'admin' : 'client',
         authProvider: 'google.com',
