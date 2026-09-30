@@ -16,6 +16,11 @@ export default defineConfig(() => {
         '@': path.resolve(currentDir, '.'),
       },
     },
+    define: {
+      'import.meta.env.VITE_FIREBASE_PROJECT_ID': JSON.stringify(process.env.VITE_FIREBASE_PROJECT_ID || 'rv-nails-studio'),
+      'import.meta.env.VITE_FIREBASE_AUTH_DOMAIN': JSON.stringify(process.env.VITE_FIREBASE_AUTH_DOMAIN || 'rv-nails-studio.firebaseapp.com'),
+      'import.meta.env.VITE_FIREBASE_STORAGE_BUCKET': JSON.stringify(process.env.VITE_FIREBASE_STORAGE_BUCKET || 'rv-nails-studio.firebasestorage.app'),
+    },
     build: {
       chunkSizeWarningLimit: 1200,
       rollupOptions: {

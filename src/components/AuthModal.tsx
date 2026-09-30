@@ -16,7 +16,6 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { firebaseConfig } from '../lib/firebase';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -176,16 +175,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         onClose();
       }, 600);
     } catch (err: any) {
-      console.warn('Google auth error in modal:', err);
+      console.error('Firebase Auth Sign-In Error:', err?.code, err?.message, err);
       if (err.code === 'auth/popup-closed-by-user') {
-        setError('Sign-in window was closed. Please try again.');
+        setError('Sign-in window was closed before completing. Please try again.');
       } else if (err.code === 'auth/popup-blocked') {
         setError('Pop-up was blocked by your browser. Please allow pop-ups for this site and try again.');
-      } else if (err.code === 'auth/unauthorized-domain') {
-        setError(`Domain "${typeof window !== 'undefined' ? window.location.hostname : 'rv-nails-studio-001.vercel.app'}" is not authorized in Firebase Authentication.`);
-      } else if (err.code === 'auth/network-request-failed') {
-        setError('Network error. Please check your internet connection and try again.');
       } else {
+        // Display the actual error returned by Firebase without any manual domain checks
         setError(err?.message || 'Google authentication could not be completed.');
       }
     } finally {
