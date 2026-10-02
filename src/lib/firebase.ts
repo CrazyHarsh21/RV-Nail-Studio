@@ -516,7 +516,8 @@ export const getUserBookedIds = (uid: string): string[] => {
 // Admin authentication authorization (Zero hardcoded credentials)
 // Primary authorized salon administrator email from runtime project configuration
 export const PRIMARY_ADMIN_EMAIL = 'harshksltc1221@gmail.com';
-export const ADMIN_PASS_HASH = 'd9487f5c9892ef828e52ff5b5751dc3b3af510297dfddaaa422df75243e1294e'; // SHA-256 hash for #RVN@iLStudio123!
+export const ADMIN_PASS_HASH = 'b8a2fed062bf9109d0bc007bebaaf93589ecc4f65865961ab52ec9c6fe874e35'; // SHA-256 hash for #RVN@ilStudio123!
+export const ADMIN_PASS_HASH_ALT = 'd9487f5c9892ef828e52ff5b5751dc3b3af510297dfddaaa422df75243e1294e'; // SHA-256 hash for #RVN@iLStudio123!
 
 /**
  * Hashes a string using standard SHA-256 (Web Crypto API)
@@ -536,6 +537,7 @@ export const seedAdminCredentialsToFirestore = async (): Promise<void> => {
   try {
     const adminDocRef = doc(db, 'admins', 'harshksltc1221');
     await setDoc(adminDocRef, {
+      uid: 'BRGHW441oHZjnA8xXqIZf2zjSLC2',
       email: PRIMARY_ADMIN_EMAIL.toLowerCase(),
       name: 'Rohit (Salon Manager & Admin)',
       passHash: ADMIN_PASS_HASH,
@@ -626,7 +628,7 @@ export const verifyAdminCredentialsFromDb = async (email: string, pass: string):
     const passHash = await hashPasswordSha256(cleanPass);
 
     // 1. Direct validation against primary administrator hash
-    if (cleanEmail === PRIMARY_ADMIN_EMAIL.toLowerCase() && passHash === ADMIN_PASS_HASH) {
+    if (cleanEmail === PRIMARY_ADMIN_EMAIL.toLowerCase() && (passHash === ADMIN_PASS_HASH || passHash === ADMIN_PASS_HASH_ALT)) {
       await seedAdminCredentialsToFirestore();
       return true;
     }
@@ -636,7 +638,7 @@ export const verifyAdminCredentialsFromDb = async (email: string, pass: string):
     const adminSnap = await getDoc(adminDocRef);
     if (adminSnap.exists()) {
       const data = adminSnap.data();
-      if (data.email?.toLowerCase() === cleanEmail && (data.passHash === passHash || passHash === ADMIN_PASS_HASH)) {
+      if (data.email?.toLowerCase() === cleanEmail && (data.passHash === passHash || passHash === ADMIN_PASS_HASH || passHash === ADMIN_PASS_HASH_ALT)) {
         await updateDoc(adminDocRef, { lastLoginAt: new Date().toISOString() }).catch(() => {});
         return true;
       }
@@ -658,7 +660,7 @@ export const verifyAdminCredentialsFromDb = async (email: string, pass: string):
     console.warn('Error verifying admin in Firestore:', err);
     // Offline resilience: if matching primary admin email and password hash
     const passHash = await hashPasswordSha256(pass.trim());
-    return (email.trim().toLowerCase() === PRIMARY_ADMIN_EMAIL.toLowerCase() && passHash === ADMIN_PASS_HASH);
+    return (email.trim().toLowerCase() === PRIMARY_ADMIN_EMAIL.toLowerCase() && (passHash === ADMIN_PASS_HASH || passHash === ADMIN_PASS_HASH_ALT));
   }
 };
 
