@@ -1,12 +1,12 @@
 {
   "projectId": "rv-nails-studio",
-  "appId": "1:1032966874087:web:fa4c948e185f0540e95342",
-  "apiKey": "AIzaSyCXUTbTtAeonnAWQkNJP8Y2qzWpnuxr68A",
+  "appId": "1:519187301244:web:ca842495f2665fe9ca1af9",
+  "apiKey": "AIzaSyDiCSJvlqm9B9SHdPQ7yrphpJ_ajksMc9s",
   "authDomain": "rv-nails-studio.firebaseapp.com",
   "firestoreDatabaseId": "(default)",
   "storageBucket": "rv-nails-studio.firebasestorage.app",
-  "messagingSenderId": "1032966874087",
-  "measurementId": "",
-  "oAuthClientId": "1032966874087-1i43nuapl80iovnp72jba0o4v3tpi7ad.apps.googleusercontent.com",
+  "messagingSenderId": "519187301244",
+  "measurementId": "G-N9YB9SWEXV",
+  "oAuthClientId": "519187301244-l1hpsasjsrdvsp81h5b3sg6uv3htdl1u.apps.googleusercontent.com",
   "recaptchaSiteKey": ""
 }

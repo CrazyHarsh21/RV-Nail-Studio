@@ -17,12 +17,13 @@ export default defineConfig(() => {
       },
     },
     define: {
-      ...(process.env.VITE_FIREBASE_API_KEY ? { 'import.meta.env.VITE_FIREBASE_API_KEY': JSON.stringify(process.env.VITE_FIREBASE_API_KEY) } : {}),
+      'import.meta.env.VITE_FIREBASE_API_KEY': JSON.stringify(process.env.VITE_FIREBASE_API_KEY || 'AIzaSyDiCSJvlqm9B9SHdPQ7yrphpJ_ajksMc9s'),
       'import.meta.env.VITE_FIREBASE_PROJECT_ID': JSON.stringify(process.env.VITE_FIREBASE_PROJECT_ID || 'rv-nails-studio'),
       'import.meta.env.VITE_FIREBASE_AUTH_DOMAIN': JSON.stringify(process.env.VITE_FIREBASE_AUTH_DOMAIN || 'rv-nails-studio.firebaseapp.com'),
       'import.meta.env.VITE_FIREBASE_STORAGE_BUCKET': JSON.stringify(process.env.VITE_FIREBASE_STORAGE_BUCKET || 'rv-nails-studio.firebasestorage.app'),
-      ...(process.env.VITE_FIREBASE_APP_ID ? { 'import.meta.env.VITE_FIREBASE_APP_ID': JSON.stringify(process.env.VITE_FIREBASE_APP_ID) } : {}),
-      ...(process.env.VITE_FIREBASE_MESSAGING_SENDER_ID ? { 'import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID': JSON.stringify(process.env.VITE_FIREBASE_MESSAGING_SENDER_ID) } : {}),
+      'import.meta.env.VITE_FIREBASE_APP_ID': JSON.stringify(process.env.VITE_FIREBASE_APP_ID || '1:519187301244:web:ca842495f2665fe9ca1af9'),
+      'import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID': JSON.stringify(process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '519187301244'),
+      'import.meta.env.VITE_FIREBASE_MEASUREMENT_ID': JSON.stringify(process.env.VITE_FIREBASE_MEASUREMENT_ID || 'G-N9YB9SWEXV'),
     },
     build: {
       chunkSizeWarningLimit: 1200,
