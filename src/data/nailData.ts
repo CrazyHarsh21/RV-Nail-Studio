@@ -29,7 +29,7 @@ export function handleImageFallback(e: React.SyntheticEvent<HTMLImageElement, Ev
 
 export const HERO_IMAGE = './images/aesthetic_hero_nails_1789826243580.webp';
 export const ARTIST_IMAGE = './images/rohit_artist_portrait_1789826210402.webp';
-export const ARTIST_CRAFTING_IMAGE = './images/rohit_crafting_action_1789826228998.webp';
+export const ARTIST_CRAFTING_IMAGE = './images/rohit_artist_portrait_1789826210402.webp';
 
 export const NAIL_DESIGNS: NailDesign[] = [
   {

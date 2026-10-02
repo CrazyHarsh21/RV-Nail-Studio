@@ -1,15 +1,13 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion } from 'motion/react';
 import { Sparkles, Calendar, CheckCircle2, MessageCircle } from 'lucide-react';
-import { ARTIST_IMAGE, ARTIST_CRAFTING_IMAGE, getWhatsAppUrl, handleImageFallback } from '../data/nailData';
+import { ARTIST_IMAGE, getWhatsAppUrl, handleImageFallback } from '../data/nailData';
 
 interface ArtistSectionProps {
   onOpenBooking: () => void;
 }
 
 export const ArtistSection: React.FC<ArtistSectionProps> = ({ onOpenBooking }) => {
-  const [activePhoto, setActivePhoto] = useState<'portrait' | 'crafting'>('portrait');
-
   return (
     <section id="artist" className="relative py-24 sm:py-32 bg-gradient-to-b from-[#E3EFF7] via-[#FAF5EE] to-[#EDE0D0] overflow-hidden border-b border-[#D4AF37]/30">
       {/* Warm Caramel Ambient Backing */}
@@ -21,7 +19,7 @@ export const ArtistSection: React.FC<ArtistSectionProps> = ({ onOpenBooking }) =
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
           
-          {/* Left Column: Portrait & Action Shot in sculpted frame */}
+          {/* Left Column: Authentic Portrait in sculpted frame */}
           <motion.div
             initial={{ opacity: 0, x: -40 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -36,7 +34,7 @@ export const ArtistSection: React.FC<ArtistSectionProps> = ({ onOpenBooking }) =
               {/* Sculpted portrait container */}
               <div className="relative w-full h-full rounded-[56px_56px_18px_18px] overflow-hidden border-2 border-[#D4AF37]/70 bg-white shadow-[0_20px_50px_rgba(180,83,9,0.15)]">
                 <img
-                  src={activePhoto === 'portrait' ? ARTIST_IMAGE : ARTIST_CRAFTING_IMAGE}
+                  src={ARTIST_IMAGE}
                   alt="Rohit - Founder & Master Nail Artist at RV Nail Studio"
                   loading="lazy"
                   decoding="async"
@@ -74,30 +72,6 @@ export const ArtistSection: React.FC<ArtistSectionProps> = ({ onOpenBooking }) =
                   Master Sculptor
                 </span>
               </div>
-            </div>
-
-            {/* Photo View Switcher */}
-            <div className="flex items-center gap-2 mt-4 bg-white p-1.5 rounded-full border border-[#E7DFD5] shadow-xs">
-              <button
-                onClick={() => setActivePhoto('portrait')}
-                className={`px-4 py-1.5 rounded-full text-xs font-bold tracking-wider transition-all ${
-                  activePhoto === 'portrait'
-                    ? 'bg-gradient-to-r from-[#B45309] to-[#C2410C] text-white shadow-xs'
-                    : 'text-[#57534E] hover:text-[#1C1917]'
-                }`}
-              >
-                Studio Portrait
-              </button>
-              <button
-                onClick={() => setActivePhoto('crafting')}
-                className={`px-4 py-1.5 rounded-full text-xs font-bold tracking-wider transition-all ${
-                  activePhoto === 'crafting'
-                    ? 'bg-gradient-to-r from-[#0284C7] to-[#0369A1] text-white shadow-xs'
-                    : 'text-[#57534E] hover:text-[#1C1917]'
-                }`}
-              >
-                In Action (Crafting)
-              </button>
             </div>
           </motion.div>
 
