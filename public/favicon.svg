@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <rect width="64" height="64" rx="16" fill="#1C1917"/>
+  <rect x="2" y="2" width="60" height="60" rx="14" stroke="#D4AF37" stroke-width="2"/>
+  <path d="M32 10L36 22H48L38 30L42 42L32 34L22 42L26 30L16 22H28L32 10Z" fill="url(#goldGrad)"/>
+  <text x="32" y="54" font-family="serif" font-size="14" font-weight="bold" fill="#D4AF37" text-anchor="middle" letter-spacing="1">RV</text>
+  <defs>
+    <linearGradient id="goldGrad" x1="16" y1="10" x2="48" y2="42" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FDE68A"/>
+      <stop offset="0.5" stop-color="#D4AF37"/>
+      <stop offset="1" stop-color="#B45309"/>
+    </linearGradient>
+  </defs>
+</svg>

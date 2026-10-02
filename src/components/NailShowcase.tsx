@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, Eye, ArrowRight, Info, RotateCw, Check, Calendar } from 'lucide-react';
-import { NAIL_DESIGNS } from '../data/nailData';
+import { NAIL_DESIGNS, handleImageFallback } from '../data/nailData';
 import { NailDesign } from '../types';
 
 interface NailShowcaseProps {
@@ -146,6 +146,7 @@ export const NailShowcase: React.FC<NailShowcaseProps> = ({
                           loading="lazy"
                           decoding="async"
                           referrerPolicy="no-referrer"
+                          onError={handleImageFallback}
                           className="w-full h-full object-cover object-center transform transition-transform duration-700 group-hover:scale-105 pointer-events-none"
                         />
 

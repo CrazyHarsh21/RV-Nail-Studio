@@ -300,6 +300,7 @@ export const UserBookingsModal: React.FC<UserBookingsModalProps> = ({
                       alt={user.displayName || 'Profile'} 
                       className="w-8 h-8 rounded-full object-cover border border-[#D4AF37] shadow-2xs shrink-0" 
                       referrerPolicy="no-referrer"
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
                     />
                   ) : (
                     <div className="w-8 h-8 rounded-full bg-[#FEF3C7] text-[#B45309] flex items-center justify-center font-bold text-xs shrink-0">

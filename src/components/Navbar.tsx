@@ -151,6 +151,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         alt={user.displayName || 'User'} 
                         className="w-5 h-5 rounded-full object-cover border border-[#FDE68A]"
                         referrerPolicy="no-referrer"
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
                       />
                     ) : (
                       <div className="w-5 h-5 rounded-full bg-[#B45309] text-white text-[10px] flex items-center justify-center font-bold">
@@ -169,6 +170,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                             alt={user.displayName || 'User'} 
                             className="w-10 h-10 rounded-full object-cover border-2 border-[#D4AF37] shadow-xs shrink-0" 
                             referrerPolicy="no-referrer"
+                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
                           />
                         ) : (
                           <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#B45309] to-[#D4AF37] text-white font-bold text-sm flex items-center justify-center shadow-xs shrink-0">
@@ -299,6 +301,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         alt={user.displayName || 'User'} 
                         className="w-10 h-10 rounded-full object-cover border-2 border-[#D4AF37] shrink-0" 
                         referrerPolicy="no-referrer"
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
                       />
                     ) : (
                       <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#B45309] to-[#D4AF37] text-white font-bold text-sm flex items-center justify-center shrink-0">

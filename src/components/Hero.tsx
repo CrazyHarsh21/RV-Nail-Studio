@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { Sparkles, MessageCircle, Calendar, ArrowUpRight, Award, ShieldCheck, Home } from 'lucide-react';
-import { HERO_IMAGE, ARTIST_IMAGE, getWhatsAppUrl } from '../data/nailData';
+import { HERO_IMAGE, ARTIST_IMAGE, getWhatsAppUrl, handleImageFallback } from '../data/nailData';
 
 interface HeroProps {
   onOpenBooking: () => void;
@@ -201,6 +201,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking }) => {
                   decoding="async"
                   fetchPriority="high"
                   referrerPolicy="no-referrer"
+                  onError={handleImageFallback}
                   className="w-full h-full object-cover object-center transform transition-transform duration-1000 group-hover:scale-105"
                 />
 
@@ -244,6 +245,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking }) => {
                   src={ARTIST_IMAGE}
                   alt="Rohit - Founder & Master Artist"
                   referrerPolicy="no-referrer"
+                  onError={handleImageFallback}
                   className="w-9 h-9 rounded-full object-cover object-top border-2 border-[#D4AF37]"
                 />
                 <div className="text-left">

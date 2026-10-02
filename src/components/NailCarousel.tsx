@@ -11,7 +11,7 @@ import {
   Calendar,
   Zap
 } from 'lucide-react';
-import { NAIL_DESIGNS } from '../data/nailData';
+import { NAIL_DESIGNS, handleImageFallback } from '../data/nailData';
 import { NailDesign } from '../types';
 
 interface NailCarouselProps {
@@ -290,6 +290,7 @@ export const NailCarousel: React.FC<NailCarouselProps> = ({
                         loading="lazy"
                         decoding="async"
                         referrerPolicy="no-referrer"
+                        onError={handleImageFallback}
                         className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 pointer-events-none"
                       />
 

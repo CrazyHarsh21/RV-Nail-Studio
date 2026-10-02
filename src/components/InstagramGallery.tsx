@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { Instagram, Heart, MessageCircle, ExternalLink } from 'lucide-react';
-import { INSTAGRAM_POSTS, BRAND_INSTAGRAM, BRAND_INSTAGRAM_URL } from '../data/nailData';
+import { INSTAGRAM_POSTS, BRAND_INSTAGRAM, BRAND_INSTAGRAM_URL, handleImageFallback } from '../data/nailData';
 
 export const InstagramGallery: React.FC = () => {
   return (
@@ -83,6 +83,7 @@ export const InstagramGallery: React.FC = () => {
                 loading="lazy"
                 decoding="async"
                 referrerPolicy="no-referrer"
+                onError={handleImageFallback}
                 className="w-full h-full object-cover object-center transform transition-transform duration-700 group-hover:scale-110"
               />
 

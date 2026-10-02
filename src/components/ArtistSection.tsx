@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { Sparkles, Calendar, CheckCircle2, MessageCircle } from 'lucide-react';
-import { ARTIST_IMAGE, ARTIST_CRAFTING_IMAGE, getWhatsAppUrl } from '../data/nailData';
+import { ARTIST_IMAGE, ARTIST_CRAFTING_IMAGE, getWhatsAppUrl, handleImageFallback } from '../data/nailData';
 
 interface ArtistSectionProps {
   onOpenBooking: () => void;
@@ -41,6 +41,7 @@ export const ArtistSection: React.FC<ArtistSectionProps> = ({ onOpenBooking }) =
                   loading="lazy"
                   decoding="async"
                   referrerPolicy="no-referrer"
+                  onError={handleImageFallback}
                   className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-700"
                 />
 

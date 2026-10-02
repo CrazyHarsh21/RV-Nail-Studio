@@ -2,7 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Sparkles, MessageCircle, Calendar, Check, Clock, ShieldCheck, Heart } from 'lucide-react';
 import { NailDesign } from '../types';
-import { getWhatsAppUrl } from '../data/nailData';
+import { getWhatsAppUrl, handleImageFallback } from '../data/nailData';
 
 interface NailDetailModalProps {
   design: NailDesign | null;
@@ -70,6 +70,7 @@ export const NailDetailModal: React.FC<NailDetailModalProps> = ({
                   loading="lazy"
                   decoding="async"
                   referrerPolicy="no-referrer"
+                  onError={handleImageFallback}
                   className="w-full h-full object-cover object-center"
                 />
 
