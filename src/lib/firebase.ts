@@ -516,8 +516,8 @@ export const getUserBookedIds = (uid: string): string[] => {
 // Admin authentication authorization (Zero hardcoded credentials)
 // Primary authorized salon administrator email from runtime project configuration
 export const PRIMARY_ADMIN_EMAIL = 'harshksltc1221@gmail.com';
-export const ADMIN_PASS_HASH = 'b8a2fed062bf9109d0bc007bebaaf93589ecc4f65865961ab52ec9c6fe874e35'; // SHA-256 hash for #RVN@ilStudio123!
-export const ADMIN_PASS_HASH_ALT = 'd9487f5c9892ef828e52ff5b5751dc3b3af510297dfddaaa422df75243e1294e'; // SHA-256 hash for #RVN@iLStudio123!
+export const ADMIN_PASS_HASH = 'b8a2fed062bf9109d0bc007bebaaf93589ecc4f65865961ab52ec9c6fe874e35';
+export const ADMIN_PASS_HASH_ALT = 'd9487f5c9892ef828e52ff5b5751dc3b3af510297dfddaaa422df75243e1294e';
 
 /**
  * Hashes a string using standard SHA-256 (Web Crypto API)
