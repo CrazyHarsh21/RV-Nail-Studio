@@ -27,7 +27,7 @@ import {
   BRAND_PHONE_INTL 
 } from '../data/nailData';
 import { Appointment, AppointmentFormData } from '../types';
-import { bookAppointmentInDatabase, getReservedSlotsForDate, sendDirectAdminNotification } from '../lib/firebase';
+import { bookAppointmentInDatabase, getReservedSlotsForDate, sendDirectAdminNotification, saveLocalAppointment } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 
 interface AppointmentModalProps {
@@ -225,6 +225,9 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
         setCreatedBooking(fallbackBooking);
         setIsSubmitted(true);
         setBookingError(null);
+
+        // Guarantee fallback is persisted on device storage
+        saveLocalAppointment(fallbackBooking);
 
         // Immediate direct background notification to Admin Rohit
         await sendDirectAdminNotification(fallbackBooking);

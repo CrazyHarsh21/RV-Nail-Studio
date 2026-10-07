@@ -80,6 +80,8 @@ export const InstagramGallery: React.FC = () => {
               <img
                 src={post.image}
                 alt={post.caption}
+                width="300"
+                height="420"
                 loading="lazy"
                 decoding="async"
                 referrerPolicy="no-referrer"

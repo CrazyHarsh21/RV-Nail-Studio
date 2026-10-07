@@ -79,7 +79,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           lastLoginAt: new Date().toISOString()
         });
         await linkAppointmentsToUser(currentUser);
-        await fetchUserPastBookingsFromFirestore(currentUser.uid, currentUser.email || undefined);
+        await fetchUserPastBookingsFromFirestore(
+          currentUser.uid, 
+          currentUser.email || undefined,
+          currentUser.phoneNumber || localStorage.getItem('rv_client_last_phone') || undefined
+        );
         try {
           localStorage.setItem('rv_client_active_session', JSON.stringify({
             uid: currentUser.uid,
@@ -185,7 +189,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // ignore
       }
       await linkAppointmentsToUser(currentUser);
-      await fetchUserPastBookingsFromFirestore(currentUser.uid, currentUser.email || undefined);
+      await fetchUserPastBookingsFromFirestore(
+        currentUser.uid, 
+        currentUser.email || undefined,
+        currentUser.phoneNumber || localStorage.getItem('rv_client_last_phone') || undefined
+      );
       return;
     } catch (firebaseErr: any) {
       // 3. If Firebase Auth email provider is disabled (operation-not-allowed) or user is in DB, check Firestore
@@ -258,11 +266,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           phoneNumber: phone?.trim() || authUser.phoneNumber
         }));
         localStorage.setItem('rv_client_last_email', normalizedEmail);
+        if (phone?.trim()) {
+          localStorage.setItem('rv_client_last_phone', phone.replace(/\D/g, '').slice(-10));
+        }
       } catch {
         // ignore
       }
       await linkAppointmentsToUser(authUser);
-      await fetchUserPastBookingsFromFirestore(authUser.uid, authUser.email || undefined);
+      await fetchUserPastBookingsFromFirestore(
+        authUser.uid, 
+        authUser.email || undefined,
+        phone?.replace(/\D/g, '').slice(-10) || authUser.phoneNumber || localStorage.getItem('rv_client_last_phone') || undefined
+      );
     } catch (authErr: any) {
       // If Firebase Auth Email provider is not enabled in console, save directly to Firestore DB
       if (authErr.code === 'auth/operation-not-allowed' || authErr.code === 'auth/network-request-failed') {
@@ -528,7 +543,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       await linkAppointmentsToUser(currentUser);
-      await fetchUserPastBookingsFromFirestore(currentUser.uid, currentUser.email || undefined);
+      await fetchUserPastBookingsFromFirestore(
+        currentUser.uid, 
+        currentUser.email || undefined,
+        currentUser.phoneNumber || localStorage.getItem('rv_client_last_phone') || undefined
+      );
     } catch (popupError: any) {
       console.warn('Google popup error:', popupError);
       throw popupError;

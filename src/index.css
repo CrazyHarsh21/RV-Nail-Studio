@@ -281,4 +281,19 @@
   }
 }
 
+/* Rendering and Layout Performance Optimizations */
+#services,
+#why-choose-us,
+#artist,
+#home-service,
+#instagram-gallery,
+#footer {
+  content-visibility: auto;
+  contain-intrinsic-size: 800px;
+}
+
+img {
+  image-rendering: auto;
+}
+
 

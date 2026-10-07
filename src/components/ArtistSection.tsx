@@ -36,6 +36,8 @@ export const ArtistSection: React.FC<ArtistSectionProps> = ({ onOpenBooking }) =
                 <img
                   src={ARTIST_IMAGE}
                   alt="Rohit - Founder & Master Nail Artist at RV Nail Studio"
+                  width="896"
+                  height="1200"
                   loading="lazy"
                   decoding="async"
                   referrerPolicy="no-referrer"

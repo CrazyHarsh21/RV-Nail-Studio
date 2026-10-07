@@ -286,6 +286,8 @@ export const NailCarousel: React.FC<NailCarouselProps> = ({
                       <img
                         src={design.image}
                         alt={design.name}
+                        width="265"
+                        height="490"
                         loading="lazy"
                         decoding="async"
                         referrerPolicy="no-referrer"

@@ -197,6 +197,8 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking }) => {
                 <img
                   src={HERO_IMAGE}
                   alt="RV Nail Studio by Rohit - Editorial Bespoke Nail Sculpting"
+                  width="896"
+                  height="1200"
                   loading="eager"
                   decoding="async"
                   fetchPriority="high"

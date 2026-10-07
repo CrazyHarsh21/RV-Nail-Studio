@@ -28,7 +28,8 @@ import {
   getUserBookedIds, 
   getUserBookedCodes,
   linkAppointmentsToUser,
-  fetchUserPastBookingsFromFirestore 
+  fetchUserPastBookingsFromFirestore,
+  getAllLocalStoredAppointments 
 } from '../lib/firebase';
 
 interface UserBookingsModalProps {
@@ -37,6 +38,7 @@ interface UserBookingsModalProps {
   appointments: Appointment[];
   onBookNew: () => void;
   onOpenAuth?: () => void;
+  onUpdateAppointments?: (appointments: Appointment[]) => void;
 }
 
 export const UserBookingsModal: React.FC<UserBookingsModalProps> = ({
@@ -44,7 +46,8 @@ export const UserBookingsModal: React.FC<UserBookingsModalProps> = ({
   onClose,
   appointments,
   onBookNew,
-  onOpenAuth
+  onOpenAuth,
+  onUpdateAppointments
 }) => {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
@@ -73,89 +76,117 @@ export const UserBookingsModal: React.FC<UserBookingsModalProps> = ({
   }, [user?.uid, user?.email]);
 
   const guestBookedIds = useMemo(() => {
-    return !user ? getGuestBookedIds() : [];
+    return getGuestBookedIds();
   }, [user]);
 
   const guestBookedCodes = useMemo(() => {
-    return !user ? getGuestBookedCodes() : [];
+    return getGuestBookedCodes();
   }, [user]);
 
-  // When modal opens, sync and link any pending bookings for logged in user
+  // When modal opens, sync and link any pending bookings for logged in user and refresh state
   useEffect(() => {
-    if (isOpen && user?.uid) {
-      linkAppointmentsToUser(user).catch(() => {});
-      fetchUserPastBookingsFromFirestore(user.uid, user.email || undefined, (user as any).phoneNumber || undefined).catch(() => {});
+    if (isOpen) {
+      if (user?.uid) {
+        linkAppointmentsToUser(user).then((claimed) => {
+          if (claimed.length > 0 && onUpdateAppointments) {
+            onUpdateAppointments(getAllLocalStoredAppointments());
+          }
+        }).catch(() => {});
+
+        fetchUserPastBookingsFromFirestore(
+          user.uid, 
+          user.email || undefined, 
+          (user as any).phoneNumber || localStorage.getItem('rv_client_last_phone') || undefined
+        ).then((fetched) => {
+          if (fetched.length > 0 && onUpdateAppointments) {
+            onUpdateAppointments(getAllLocalStoredAppointments());
+          }
+        }).catch(() => {});
+      } else {
+        // If guest, refresh from local store
+        const stored = getAllLocalStoredAppointments();
+        if (stored.length > 0 && onUpdateAppointments) {
+          onUpdateAppointments(stored);
+        }
+      }
     }
-  }, [isOpen, user]);
+  }, [isOpen, user, onUpdateAppointments]);
 
   /**
    * RELIABLE PERSISTENT USER BOOKING FILTER:
-   * Returns bookings that belong to this user via:
+   * Returns bookings that belong to this user across:
    * 1. Direct UID match
-   * 2. Verified Account Email match
-   * 3. Verified Phone Number match
-   * 4. Stored booking codes or appointment IDs
-   * If logged out: returns bookings made on this device so history is never erased.
+   * 2. Verified Account Email or Stored Client Email match
+   * 3. Verified Phone Number or Stored Client Phone match
+   * 4. Device & User Booking Codes and Appointment IDs
+   * Guarantees bookings are NEVER ERASED when logging in, logging out, or refreshing.
    */
   const userAppointments = useMemo(() => {
-    if (user?.uid) {
-      return appointments.filter((apt) => {
-        // 1. Match current user ID
-        if (apt.userId && apt.userId === user.uid) {
-          return true;
-        }
+    const lastPhone = (localStorage.getItem('rv_client_last_phone') || '').replace(/\D/g, '').slice(-10);
+    const lastEmail = (localStorage.getItem('rv_client_last_email') || '').toLowerCase().trim();
 
-        // 2. Match verified account email
-        if (userEmailClean && apt.email && apt.email.toLowerCase().trim() === userEmailClean) {
-          return true;
-        }
+    // Set of all known booking codes & IDs on this device and user
+    const allKnownIds = new Set<string>([
+      ...userBookedIds,
+      ...guestBookedIds,
+    ]);
+    const allKnownCodes = new Set<string>([
+      ...userBookedCodes,
+      ...guestBookedCodes,
+    ]);
 
-        // 3. Match user phone
-        const aptPhoneClean = apt.phone ? apt.phone.replace(/\D/g, '').slice(-10) : '';
-        if (userPhoneClean && aptPhoneClean && (aptPhoneClean.endsWith(userPhoneClean) || userPhoneClean.endsWith(aptPhoneClean))) {
-          return true;
-        }
+    return appointments.filter((apt) => {
+      // 1. Match current user ID
+      if (user?.uid && apt.userId && apt.userId === user.uid) {
+        return true;
+      }
 
-        // 4. Match local user booking codes or IDs
-        if (userBookedIds.includes(apt.id) || (apt.bookingCode && (userBookedCodes.includes(apt.bookingCode) || userBookedIds.includes(apt.bookingCode)))) {
-          return true;
-        }
+      // 2. Match verified account email or remembered client email
+      const aptEmailClean = apt.email ? apt.email.toLowerCase().trim() : '';
+      if (userEmailClean && aptEmailClean && aptEmailClean === userEmailClean) {
+        return true;
+      }
+      if (lastEmail && aptEmailClean && aptEmailClean === lastEmail) {
+        return true;
+      }
 
-        return false;
-      });
-    } else {
-      // Guest session or logged-out: show bookings on this device
-      const lastPhone = localStorage.getItem('rv_client_last_phone') || '';
-      const lastEmail = localStorage.getItem('rv_client_last_email') || '';
+      // 3. Match user phone or remembered client phone
+      const aptPhoneClean = apt.phone ? apt.phone.replace(/\D/g, '').slice(-10) : '';
+      if (userPhoneClean && aptPhoneClean && (aptPhoneClean.endsWith(userPhoneClean) || userPhoneClean.endsWith(aptPhoneClean))) {
+        return true;
+      }
+      if (lastPhone && aptPhoneClean && (aptPhoneClean.endsWith(lastPhone) || lastPhone.endsWith(aptPhoneClean))) {
+        return true;
+      }
 
-      return appointments.filter((apt) => {
-        if (guestBookedIds.includes(apt.id) || (apt.bookingCode && guestBookedCodes.includes(apt.bookingCode))) {
-          return true;
-        }
-        const aptPhoneClean = apt.phone ? apt.phone.replace(/\D/g, '').slice(-10) : '';
-        if (lastPhone && aptPhoneClean && aptPhoneClean.endsWith(lastPhone.slice(-10))) {
-          return true;
-        }
-        if (lastEmail && apt.email && apt.email.toLowerCase().trim() === lastEmail.toLowerCase().trim()) {
-          return true;
-        }
-        return false;
-      });
-    }
+      // 4. Match local user booking codes or IDs (device + user)
+      if (allKnownIds.has(apt.id) || (apt.bookingCode && allKnownCodes.has(apt.bookingCode))) {
+        return true;
+      }
+
+      return false;
+    });
   }, [appointments, user, userEmailClean, userPhoneClean, userBookedIds, userBookedCodes, guestBookedIds, guestBookedCodes]);
 
   // Sync from Cloud Database on request
   const handleCloudSync = async () => {
-    if (!user?.uid) {
-      setSyncNotice('Sign in to sync your cloud booking history across devices.');
-      setTimeout(() => setSyncNotice(null), 3500);
-      return;
-    }
     try {
       setIsSyncing(true);
-      await linkAppointmentsToUser(user);
-      const results = await fetchUserPastBookingsFromFirestore(user.uid, user.email || undefined, (user as any).phoneNumber || undefined);
-      setSyncNotice(`Synced ${results.length} bookings successfully from Studio Database.`);
+      let count = 0;
+      if (user?.uid) {
+        await linkAppointmentsToUser(user);
+        const results = await fetchUserPastBookingsFromFirestore(
+          user.uid, 
+          user.email || undefined, 
+          (user as any).phoneNumber || localStorage.getItem('rv_client_last_phone') || undefined
+        );
+        count = results.length;
+      }
+      const allUpdated = getAllLocalStoredAppointments();
+      if (onUpdateAppointments) {
+        onUpdateAppointments(allUpdated);
+      }
+      setSyncNotice(`History refreshed! Found ${count || allUpdated.length} bookings.`);
       setTimeout(() => setSyncNotice(null), 3500);
     } catch {
       setSyncNotice('Could not connect to Cloud. Offline history displayed.');

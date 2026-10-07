@@ -143,6 +143,8 @@ export const NailShowcase: React.FC<NailShowcaseProps> = ({
                         <img
                           src={design.image}
                           alt={design.name}
+                          width="400"
+                          height="550"
                           loading="lazy"
                           decoding="async"
                           referrerPolicy="no-referrer"

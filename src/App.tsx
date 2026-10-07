@@ -30,7 +30,10 @@ import {
   getUserBookedIds, 
   getUserBookedCodes,
   getGuestBookedIds, 
-  getGuestBookedCodes 
+  getGuestBookedCodes,
+  getAllLocalStoredAppointments,
+  linkAppointmentsToUser,
+  fetchUserPastBookingsFromFirestore 
 } from './lib/firebase';
 import { Appointment, NailDesign } from './types';
 import { ShieldCheck } from 'lucide-react';
@@ -48,19 +51,51 @@ function SalonAppContent() {
   const [adminDashboardOpen, setAdminDashboardOpen] = useState(false);
   const [myBookingsOpen, setMyBookingsOpen] = useState(false);
 
-  // Real-time appointment store
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  // Persistent real-time appointment store (guaranteed immediate local restoration)
+  const [appointments, setAppointments] = useState<Appointment[]>(() => getAllLocalStoredAppointments());
 
   // Detail modal state
   const [selectedDetailDesign, setSelectedDetailDesign] = useState<NailDesign | null>(null);
 
-  // Subscribe to real-time appointments from Firestore
+  // Subscribe to real-time appointments from Firestore & local changes
   useEffect(() => {
     const unsubscribe = subscribeToAppointments((latestAppointments) => {
       setAppointments(latestAppointments);
     });
-    return () => unsubscribe();
+
+    const handleAppointmentsChanged = () => {
+      setAppointments(getAllLocalStoredAppointments());
+    };
+    window.addEventListener('rv_appointments_changed', handleAppointmentsChanged);
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener('rv_appointments_changed', handleAppointmentsChanged);
+    };
   }, []);
+
+  // When user logs in or out, automatically link and fetch their past cloud bookings
+  useEffect(() => {
+    if (user?.uid) {
+      linkAppointmentsToUser(user).then((claimed) => {
+        if (claimed.length > 0) {
+          setAppointments(getAllLocalStoredAppointments());
+        }
+      }).catch(() => {});
+
+      fetchUserPastBookingsFromFirestore(
+        user.uid,
+        user.email || undefined,
+        (user as any).phoneNumber || localStorage.getItem('rv_client_last_phone') || undefined
+      ).then((remote) => {
+        if (remote.length > 0) {
+          setAppointments(getAllLocalStoredAppointments());
+        }
+      }).catch(() => {});
+    } else {
+      setAppointments(getAllLocalStoredAppointments());
+    }
+  }, [user]);
 
   const pendingCount = appointments.filter((a) => a.status === 'pending').length;
 
@@ -76,39 +111,30 @@ function SalonAppContent() {
       return [];
     }
   }, [user?.uid, user?.email]);
-  const guestBookedIds = useMemo(() => (!user ? getGuestBookedIds() : []), [user]);
-  const guestBookedCodes = useMemo(() => (!user ? getGuestBookedCodes() : []), [user]);
+  const guestBookedIds = useMemo(() => getGuestBookedIds(), [user]);
+  const guestBookedCodes = useMemo(() => getGuestBookedCodes(), [user]);
   const userEmailClean = user?.email?.toLowerCase().trim() || '';
   const userPhoneClean = (user as any)?.phoneNumber ? (user as any).phoneNumber.replace(/\D/g, '').slice(-10) : '';
 
+  // Unified resilient appointment count (guaranteed never erased on logout / login)
   const userAppointmentsCount = useMemo(() => {
-    if (user?.uid) {
-      return appointments.filter((apt) => {
-        if (apt.userId && apt.userId === user.uid) return true;
-        if (userEmailClean && apt.email && apt.email.toLowerCase().trim() === userEmailClean) return true;
-        const aptPhoneClean = apt.phone ? apt.phone.replace(/\D/g, '').slice(-10) : '';
-        if (userPhoneClean && aptPhoneClean && (userPhoneClean.endsWith(aptPhoneClean) || aptPhoneClean.endsWith(userPhoneClean))) return true;
-        if (userBookedIds.includes(apt.id) || (apt.bookingCode && (userBookedCodes.includes(apt.bookingCode) || userBookedIds.includes(apt.bookingCode)))) return true;
-        return false;
-      }).length;
-    } else {
-      const lastPhone = localStorage.getItem('rv_client_last_phone') || '';
-      const lastEmail = localStorage.getItem('rv_client_last_email') || '';
+    const lastPhone = (localStorage.getItem('rv_client_last_phone') || '').replace(/\D/g, '').slice(-10);
+    const lastEmail = (localStorage.getItem('rv_client_last_email') || '').toLowerCase().trim();
 
-      return appointments.filter((apt) => {
-        if (guestBookedIds.includes(apt.id) || (apt.bookingCode && guestBookedCodes.includes(apt.bookingCode))) {
-          return true;
-        }
-        const aptPhoneClean = apt.phone ? apt.phone.replace(/\D/g, '').slice(-10) : '';
-        if (lastPhone && aptPhoneClean && aptPhoneClean.endsWith(lastPhone.slice(-10))) {
-          return true;
-        }
-        if (lastEmail && apt.email && apt.email.toLowerCase().trim() === lastEmail.toLowerCase().trim()) {
-          return true;
-        }
-        return false;
-      }).length;
-    }
+    const allKnownIds = new Set<string>([...userBookedIds, ...guestBookedIds]);
+    const allKnownCodes = new Set<string>([...userBookedCodes, ...guestBookedCodes]);
+
+    return appointments.filter((apt) => {
+      if (user?.uid && apt.userId && apt.userId === user.uid) return true;
+      const aptEmailClean = apt.email ? apt.email.toLowerCase().trim() : '';
+      if (userEmailClean && aptEmailClean && aptEmailClean === userEmailClean) return true;
+      if (lastEmail && aptEmailClean && aptEmailClean === lastEmail) return true;
+      const aptPhoneClean = apt.phone ? apt.phone.replace(/\D/g, '').slice(-10) : '';
+      if (userPhoneClean && aptPhoneClean && (userPhoneClean.endsWith(aptPhoneClean) || userPhoneClean.endsWith(aptPhoneClean))) return true;
+      if (lastPhone && aptPhoneClean && (aptPhoneClean.endsWith(lastPhone) || lastPhone.endsWith(aptPhoneClean))) return true;
+      if (allKnownIds.has(apt.id) || (apt.bookingCode && allKnownCodes.has(apt.bookingCode))) return true;
+      return false;
+    }).length;
   }, [appointments, user, userEmailClean, userPhoneClean, userBookedIds, userBookedCodes, guestBookedIds, guestBookedCodes]);
 
   const handleOpenBooking = (
@@ -283,6 +309,7 @@ function SalonAppContent() {
         appointments={appointments}
         onBookNew={() => handleOpenBooking()}
         onOpenAuth={() => setAuthModalOpen(true)}
+        onUpdateAppointments={setAppointments}
       />
 
       {/* User Login / Register & Admin Modal */}

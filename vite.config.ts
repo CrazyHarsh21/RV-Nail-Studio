@@ -27,6 +27,11 @@ export default defineConfig(() => {
       'import.meta.env.VITE_FIREBASE_MEASUREMENT_ID': JSON.stringify(process.env.VITE_FIREBASE_MEASUREMENT_ID || 'G-N9YB9SWEXV'),
     },
     build: {
+      target: 'es2020',
+      minify: 'esbuild',
+      cssCodeSplit: true,
+      sourcemap: false,
+      reportCompressedSize: false,
       chunkSizeWarningLimit: 1200,
       rollupOptions: {
         output: {
@@ -40,6 +45,9 @@ export default defineConfig(() => {
               }
               if (id.includes('lucide-react')) {
                 return 'vendor-icons';
+              }
+              if (id.includes('canvas-confetti')) {
+                return 'vendor-confetti';
               }
               if (id.includes('react-dom') || id.includes('react/')) {
                 return 'vendor-react';

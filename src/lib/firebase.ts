@@ -83,6 +83,106 @@ const GUEST_CODES_KEY = 'rv_guest_booking_codes';
 const GUEST_IDS_KEY = 'rv_guest_booking_ids';
 const LOCAL_STORAGE_CACHE_KEY = 'rv_nails_appointments_store';
 
+/**
+ * Retrieve all appointments persistently cached on this device
+ */
+export const getAllLocalStoredAppointments = (): Appointment[] => {
+  try {
+    const cachedRaw = localStorage.getItem(LOCAL_STORAGE_CACHE_KEY);
+    if (!cachedRaw) return [];
+    const list: Appointment[] = JSON.parse(cachedRaw);
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+};
+
+/**
+ * Save an individual appointment locally and guarantee it is never erased
+ */
+export const saveLocalAppointment = (apt: Appointment): void => {
+  if (!apt || !apt.id) return;
+  try {
+    const current = getAllLocalStoredAppointments();
+    const updated = [apt, ...current.filter((a) => a.id !== apt.id && a.bookingCode !== apt.bookingCode)];
+    localStorage.setItem(LOCAL_STORAGE_CACHE_KEY, JSON.stringify(updated));
+
+    // Also update guest codes & ids so history is preserved logged out
+    if (apt.bookingCode) {
+      const gCodes: string[] = JSON.parse(localStorage.getItem(GUEST_CODES_KEY) || '[]');
+      if (!gCodes.includes(apt.bookingCode)) {
+        gCodes.unshift(apt.bookingCode);
+        localStorage.setItem(GUEST_CODES_KEY, JSON.stringify(gCodes));
+      }
+    }
+    if (apt.id) {
+      const gIds: string[] = JSON.parse(localStorage.getItem(GUEST_IDS_KEY) || '[]');
+      if (!gIds.includes(apt.id)) {
+        gIds.unshift(apt.id);
+        localStorage.setItem(GUEST_IDS_KEY, JSON.stringify(gIds));
+      }
+    }
+
+    if (apt.userId) {
+      const uCodes: string[] = JSON.parse(localStorage.getItem(`rv_user_booking_codes_${apt.userId}`) || '[]');
+      if (apt.bookingCode && !uCodes.includes(apt.bookingCode)) {
+        uCodes.unshift(apt.bookingCode);
+        localStorage.setItem(`rv_user_booking_codes_${apt.userId}`, JSON.stringify(uCodes));
+      }
+      const uIds: string[] = JSON.parse(localStorage.getItem(`rv_user_booking_ids_${apt.userId}`) || '[]');
+      if (apt.id && !uIds.includes(apt.id)) {
+        uIds.unshift(apt.id);
+        localStorage.setItem(`rv_user_booking_ids_${apt.userId}`, JSON.stringify(uIds));
+      }
+    }
+
+    if (apt.email) {
+      localStorage.setItem('rv_client_last_email', apt.email.toLowerCase().trim());
+    }
+    if (apt.phone) {
+      localStorage.setItem('rv_client_last_phone', apt.phone.replace(/\D/g, '').slice(-10));
+    }
+
+    // Broadcast appointment change event to reactively update all components
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('rv_appointments_changed', { detail: apt }));
+    }
+  } catch {
+    // ignore
+  }
+};
+
+/**
+ * Merge remote appointments with local cache and persist
+ */
+export const mergeAndSaveAppointments = (newList: Appointment[]): Appointment[] => {
+  if (!Array.isArray(newList)) return getAllLocalStoredAppointments();
+  try {
+    const existing = getAllLocalStoredAppointments();
+    const map = new Map<string, Appointment>();
+
+    // Index existing
+    for (const a of existing) {
+      if (a && a.id) map.set(a.id, a);
+    }
+    // Merge newer list
+    for (const a of newList) {
+      if (a && a.id) {
+        const prev = map.get(a.id);
+        map.set(a.id, { ...(prev || {}), ...a });
+      }
+    }
+
+    const merged = Array.from(map.values()).sort(
+      (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+    );
+    localStorage.setItem(LOCAL_STORAGE_CACHE_KEY, JSON.stringify(merged));
+    return merged;
+  } catch {
+    return newList;
+  }
+};
+
 // Purge any legacy demo customer data on module init
 try {
   const cachedRaw = localStorage.getItem(LOCAL_STORAGE_CACHE_KEY);
@@ -349,6 +449,9 @@ export const bookAppointmentInDatabase = async (
     // ignore
   }
 
+  // Guarantee persistent storage on device immediately
+  saveLocalAppointment(createdAppointment);
+
   return createdAppointment;
 };
 
@@ -431,6 +534,13 @@ export const fetchUserPastBookingsFromFirestore = async (
       }
     }
 
+    if (list.length > 0) {
+      mergeAndSaveAppointments(list);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('rv_appointments_changed'));
+      }
+    }
+
     return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   } catch (err) {
     console.warn('Notice querying user past bookings from Firestore:', err);
@@ -440,11 +550,17 @@ export const fetchUserPastBookingsFromFirestore = async (
 
 
 /**
- * Real-time subscription to all appointments (for Admin Dashboard)
+ * Real-time subscription to all appointments (for Admin Dashboard & App store)
  */
 export const subscribeToAppointments = (
   callback: (appointments: Appointment[]) => void
 ): (() => void) => {
+  // Immediately invoke with existing local cache so UI is instantaneous
+  const cached = getAllLocalStoredAppointments();
+  if (cached.length > 0) {
+    callback(cached);
+  }
+
   try {
     const aptCollection = collection(db, 'appointments');
     const aptQuery = query(aptCollection, orderBy('createdAt', 'desc'));
@@ -456,16 +572,21 @@ export const subscribeToAppointments = (
         snapshot.forEach((docSnap) => {
           remoteList.push({ id: docSnap.id, ...(docSnap.data() as Omit<Appointment, 'id'>) });
         });
-        callback(remoteList);
+        const merged = mergeAndSaveAppointments(remoteList);
+        callback(merged);
       },
       (error) => {
         console.warn('Firestore snapshot error:', error);
+        const fallback = getAllLocalStoredAppointments();
+        callback(fallback);
       }
     );
 
     return unsubscribe;
   } catch (error) {
     console.warn('Could not attach Firestore snapshot listener:', error);
+    const fallback = getAllLocalStoredAppointments();
+    callback(fallback);
     return () => {};
   }
 };
@@ -621,12 +742,27 @@ export const linkAppointmentsToUser = async (user: User): Promise<Appointment[]>
     }
 
     // 4. Save and preserve all claimed codes & IDs in user-specific and universal caches (DO NOT DELETE)
+    // Also claim matching appointments from local cache
+    const localStore = getAllLocalStoredAppointments();
+    for (const localApt of localStore) {
+      if (
+        (userEmail && localApt.email && localApt.email.toLowerCase().trim() === userEmail) ||
+        (userPhone && localApt.phone && localApt.phone.replace(/\D/g, '').endsWith(userPhone)) ||
+        (localApt.bookingCode && allCandidateCodes.includes(localApt.bookingCode))
+      ) {
+        if (!seenDocIds.has(localApt.id)) {
+          seenDocIds.add(localApt.id);
+          claimedAppointments.push({ ...localApt, userId: user.uid });
+        }
+      }
+    }
+
     const allClaimedCodes = claimedAppointments.map((a) => a.bookingCode).filter(Boolean);
     const allClaimedIds = claimedAppointments.map((a) => a.id).filter(Boolean);
 
     if (allClaimedCodes.length > 0) {
       const existingUserCodes: string[] = JSON.parse(localStorage.getItem(`rv_user_booking_codes_${user.uid}`) || '[]');
-      const mergedCodes = Array.from(new Set([...existingUserCodes, ...allClaimedCodes]));
+      const mergedCodes = Array.from(new Set([...existingUserCodes, ...allClaimedCodes, ...guestCodes]));
       localStorage.setItem(`rv_user_booking_codes_${user.uid}`, JSON.stringify(mergedCodes));
 
       const existingUserIds: string[] = JSON.parse(localStorage.getItem(`rv_user_booking_ids_${user.uid}`) || '[]');
@@ -643,6 +779,13 @@ export const linkAppointmentsToUser = async (user: User): Promise<Appointment[]>
 
       const existingGuestIds: string[] = JSON.parse(localStorage.getItem(GUEST_IDS_KEY) || '[]');
       localStorage.setItem(GUEST_IDS_KEY, JSON.stringify(Array.from(new Set([...existingGuestIds, ...allClaimedIds]))));
+    }
+
+    if (claimedAppointments.length > 0) {
+      mergeAndSaveAppointments(claimedAppointments);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('rv_appointments_changed'));
+      }
     }
 
     return claimedAppointments;
