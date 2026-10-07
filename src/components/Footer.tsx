@@ -1,5 +1,5 @@
 import React from 'react';
-import { Phone, MessageCircle, Instagram, Sparkles, Heart, ArrowUp, MapPin, ExternalLink } from 'lucide-react';
+import { Phone, MessageCircle, Instagram, Sparkles, ArrowUp, MapPin, ExternalLink } from 'lucide-react';
 import { BRAND_PHONE, BRAND_INSTAGRAM, BRAND_INSTAGRAM_URL, BRAND_ADDRESS, BRAND_MAPS_URL, getWhatsAppUrl } from '../data/nailData';
 
 interface FooterProps {

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   X, 
@@ -25,16 +25,21 @@ import {
   Award,
   Users,
   Lock,
-  LogOut
+  LogOut,
+  Bell,
+  Send
 } from 'lucide-react';
 import { Appointment, AppointmentStatus, PaymentStatus } from '../types';
 import { 
   updateAppointmentInDatabase, 
   deleteAppointmentFromDatabase, 
   bookAppointmentInDatabase,
-  getEstimatedPrice 
+  getEstimatedPrice,
+  subscribeToAdminNotifications,
+  AdminNotification,
+  sendDirectAdminNotification
 } from '../lib/firebase';
-import { TIME_SLOTS, getWhatsAppUrl } from '../data/nailData';
+import { TIME_SLOTS, getClientWhatsAppUrl, BRAND_PHONE, BRAND_PHONE_INTL, formatAdminBookingWhatsAppMessage } from '../data/nailData';
 import { ClientHistoryModal, ClientProfileSummary } from './ClientHistoryModal';
 import { useAuth } from '../context/AuthContext';
 
@@ -70,9 +75,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     serviceType?: 'Studio Visit' | 'Home Service';
   } | null>(null);
 
-  const [activeTab, setActiveTab] = useState<'appointments' | 'schedule' | 'progress_report' | 'clients'>('appointments');
+  const [activeTab, setActiveTab] = useState<'appointments' | 'schedule' | 'progress_report' | 'clients' | 'direct_alerts'>('appointments');
   const [selectedAptForNotes, setSelectedAptForNotes] = useState<Appointment | null>(null);
   const [noteInput, setNoteInput] = useState('');
+
+  // Live direct notifications & automated gateway state
+  const [directNotifications, setDirectNotifications] = useState<AdminNotification[]>([]);
+  const [callmebotKey, setCallmebotKey] = useState(() => localStorage.getItem('rv_callmebot_apikey') || '');
+  const [customGatewayUrl, setCustomGatewayUrl] = useState(() => localStorage.getItem('rv_whatsapp_gateway_url') || '');
+  const [gatewaySaved, setGatewaySaved] = useState(false);
+  const [testAlertSent, setTestAlertSent] = useState(false);
+  const [selectedNotifForPreview, setSelectedNotifForPreview] = useState<AdminNotification | null>(null);
+
+  // Subscribe to real-time incoming direct notifications
+  useEffect(() => {
+    const unsub = subscribeToAdminNotifications((list) => {
+      setDirectNotifications(list);
+    });
+    return () => unsub();
+  }, []);
 
   // Selected client for Individual History & Lifetime Spend modal
   const [selectedClientProfile, setSelectedClientProfile] = useState<ClientProfileSummary | null>(null);
@@ -641,6 +662,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <TrendingUp className="w-3.5 h-3.5" />
                 <span>Monthly Progress & Totals</span>
               </button>
+
+              {/* TAB: Direct Alerts & Auto WhatsApp */}
+              <button
+                onClick={() => setActiveTab('direct_alerts')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 shrink-0 ${
+                  activeTab === 'direct_alerts'
+                    ? 'bg-white text-emerald-800 shadow-xs border border-emerald-300'
+                    : 'text-[#78716C] hover:text-[#1C1917]'
+                }`}
+              >
+                <Bell className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Direct Alerts & Bot</span>
+                {directNotifications.length > 0 && (
+                  <span className="px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px] animate-pulse">
+                    {directNotifications.length}
+                  </span>
+                )}
+              </button>
             </div>
 
             <div className="text-xs text-[#78716C] hidden lg:block shrink-0">
@@ -881,7 +920,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 <div className="flex items-center gap-2 mt-1">
                                   <span className="text-[#57534E] text-[11px]">+91 {apt.phone}</span>
                                   <a
-                                    href={getWhatsAppUrl(`Hi ${apt.fullName}, this is Rohit from RV Nail Studio regarding your appointment ${apt.bookingCode} on ${apt.date} at ${apt.timeSlot}.`)}
+                                    href={getClientWhatsAppUrl(apt.phone, `Hi ${apt.fullName}, this is Rohit from RV Nail Studio regarding your appointment ${apt.bookingCode} on ${apt.date} at ${apt.timeSlot}.`)}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="p-1 rounded-md bg-[#25D366]/10 text-[#15803D] hover:bg-[#25D366]/20 transition-colors"
@@ -1400,6 +1439,202 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </div>
                 </div>
 
+              </div>
+            )}
+
+            {/* TAB: DIRECT ALERTS & AUTOMATED WHATSAPP BOT */}
+            {activeTab === 'direct_alerts' && (
+              <div className="space-y-6">
+                {/* Header Banner */}
+                <div className="bg-gradient-to-br from-emerald-50 via-[#F0FDF4] to-[#FAF8F5] p-5 sm:p-6 rounded-2xl border-2 border-[#25D366] shadow-xs">
+                  <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="relative flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#25D366] opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-[#25D366]"></span>
+                      </span>
+                      <h3 className="font-serif text-lg font-bold text-emerald-950">
+                        Direct Background Alerts & Automated WhatsApp Bot
+                      </h3>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-900 font-bold text-xs">
+                      Admin: +91 {BRAND_PHONE}
+                    </span>
+                  </div>
+                  <p className="text-xs text-stone-700 leading-relaxed max-w-3xl">
+                    Jab bhi koi user website par booking form submit karta hai, uska message bina user ke WhatsApp khole <strong>directly</strong> aapke dashboard aur background queue me deliver ho jata hai.
+                  </p>
+                </div>
+
+                {/* Gateway Configuration & Test */}
+                <div className="bg-white p-5 rounded-2xl border border-[#E7DFD5] shadow-xs">
+                  <h4 className="font-serif font-bold text-base text-[#1C1917] mb-2 flex items-center gap-2">
+                    <MessageCircle className="w-4 h-4 text-[#25D366]" />
+                    <span>WhatsApp Direct Gateway Settings (24/7 Automated Delivery)</span>
+                  </h4>
+                  <p className="text-xs text-[#78716C] mb-4">
+                    Agar aap har booking ka WhatsApp message seedhe apne phone number (+91 {BRAND_PHONE}) par push karwana chahte hain, toh yahan apna free <strong>CallMeBot API Key</strong> ya custom <strong>Webhook URL</strong> save karein:
+                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase text-[#1C1917] mb-1">
+                        Free CallMeBot API Key (WhatsApp Push)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 1234567"
+                        value={callmebotKey}
+                        onChange={(e) => setCallmebotKey(e.target.value)}
+                        className="w-full bg-[#FAF5F0] border border-[#E7DFD5] rounded-xl px-3 py-2 text-xs text-[#1C1917] font-mono focus:border-[#B45309] focus:outline-none"
+                      />
+                      <p className="text-[10px] text-[#A8A29E] mt-1">
+                        Free Key paane ke liye WhatsApp par <strong>+34 941 080 528</strong> ko "I allow callmebot to send me messages" bhej kar instant key paayein.
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase text-[#1C1917] mb-1">
+                        Custom Webhook / Twilio URL (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="https://your-webhook-or-gateway.com/send"
+                        value={customGatewayUrl}
+                        onChange={(e) => setCustomGatewayUrl(e.target.value)}
+                        className="w-full bg-[#FAF5F0] border border-[#E7DFD5] rounded-xl px-3 py-2 text-xs text-[#1C1917] font-mono focus:border-[#B45309] focus:outline-none"
+                      />
+                      <p className="text-[10px] text-[#A8A29E] mt-1">
+                        Aapka custom backend ya third-party WhatsApp gateway webhook URL.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        localStorage.setItem('rv_callmebot_apikey', callmebotKey.trim());
+                        localStorage.setItem('rv_whatsapp_gateway_url', customGatewayUrl.trim());
+                        setGatewaySaved(true);
+                        setTimeout(() => setGatewaySaved(false), 2500);
+                      }}
+                      className="px-4 py-2 rounded-xl bg-[#B45309] hover:bg-[#92400E] text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
+                    >
+                      {gatewaySaved ? '✓ Settings Saved!' : 'Save Gateway Settings'}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setTestAlertSent(true);
+                        const testBooking: any = {
+                          bookingCode: 'RV-TEST-001',
+                          fullName: 'Rohit Test Client',
+                          phone: BRAND_PHONE,
+                          date: todayStr,
+                          timeSlot: '12:00 PM - 01:30 PM',
+                          service: 'Chrome Glaze & Aura Finish',
+                          serviceType: 'Studio Visit',
+                          amount: 1299
+                        };
+                        await sendDirectAdminNotification(testBooking);
+                        setTimeout(() => setTestAlertSent(false), 3000);
+                      }}
+                      className="px-4 py-2 rounded-xl border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs transition-all cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      <span>{testAlertSent ? '✓ Test Alert Dispatched!' : 'Send Test Notification'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Direct Incoming Bookings List */}
+                <div className="bg-white rounded-2xl border border-[#E7DFD5] p-5 shadow-xs">
+                  <div className="flex items-center justify-between mb-4 border-b border-[#E7DFD5] pb-3">
+                    <h4 className="font-serif font-bold text-base text-[#1C1917] flex items-center gap-2">
+                      <Bell className="w-4 h-4 text-[#B45309]" />
+                      <span>Direct Incoming Notifications Log ({directNotifications.length})</span>
+                    </h4>
+                    <span className="text-xs text-[#78716C]">
+                      Real-time Cloud Sync with Firestore
+                    </span>
+                  </div>
+
+                  {directNotifications.length === 0 ? (
+                    <div className="py-12 text-center text-[#78716C] text-xs">
+                      Abhi koi direct notification log nahi hai. Jab bhi client book karega, msg directly yahan show hoga.
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {directNotifications.map((notif) => (
+                        <div
+                          key={notif.id}
+                          className="p-4 rounded-xl border border-[#E7DFD5] hover:border-emerald-300 bg-[#FAF8F5] transition-all"
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px] uppercase">
+                                {notif.bookingCode}
+                              </span>
+                              <span className="font-bold text-sm text-[#1C1917]">{notif.clientName}</span>
+                            </div>
+                            <span className="text-[10px] text-[#A8A29E]">
+                              {new Date(notif.createdAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-[#57534E] mb-3">
+                            <div><strong>Phone:</strong> +91 {notif.clientPhone}</div>
+                            <div><strong>Date:</strong> {notif.date} ({notif.timeSlot})</div>
+                            <div><strong>Service:</strong> {notif.service}</div>
+                            <div><strong>Type:</strong> {notif.serviceType}</div>
+                          </div>
+
+                          {notif.address && (
+                            <div className="text-xs text-stone-600 mb-2">
+                              <strong>Doorstep Address:</strong> {notif.address}
+                            </div>
+                          )}
+
+                          <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[#F5ECE4]">
+                            <a
+                              href={getClientWhatsAppUrl(notif.clientPhone, `Hi ${notif.clientName}, this is Rohit from RV Nail Studio regarding your booking ${notif.bookingCode} on ${notif.date} at ${notif.timeSlot}...`)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-3 py-1.5 rounded-lg bg-[#25D366] text-white text-xs font-bold hover:bg-[#20bd5a] flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <MessageCircle className="w-3.5 h-3.5 fill-current" />
+                              <span>Reply on WhatsApp</span>
+                            </a>
+
+                            <a
+                              href={`tel:${notif.clientPhone}`}
+                              className="px-3 py-1.5 rounded-lg border border-[#E7DFD5] bg-white hover:bg-stone-50 text-[#1C1917] text-xs font-semibold flex items-center gap-1.5"
+                            >
+                              <Phone className="w-3.5 h-3.5 text-[#B45309]" />
+                              <span>Call Client</span>
+                            </a>
+
+                            <button
+                              type="button"
+                              onClick={() => setSelectedNotifForPreview(selectedNotifForPreview?.id === notif.id ? null : notif)}
+                              className="px-3 py-1.5 rounded-lg border border-[#E7DFD5] bg-white hover:bg-stone-50 text-stone-700 text-xs font-medium cursor-pointer"
+                            >
+                              {selectedNotifForPreview?.id === notif.id ? 'Hide Message' : 'View Full Msg'}
+                            </button>
+                          </div>
+
+                          {selectedNotifForPreview?.id === notif.id && (
+                            <div className="mt-3 p-3 rounded-xl bg-white border border-emerald-200 text-[11px] font-mono whitespace-pre-line text-stone-800 leading-relaxed shadow-inner">
+                              {notif.message}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 

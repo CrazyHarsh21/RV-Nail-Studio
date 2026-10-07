@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Sparkles, MessageCircle, Calendar, Check, Clock, ShieldCheck, Heart } from 'lucide-react';
+import { X, Sparkles, MessageCircle, Calendar, Clock } from 'lucide-react';
 import { NailDesign } from '../types';
 import { getWhatsAppUrl, handleImageFallback } from '../data/nailData';
 

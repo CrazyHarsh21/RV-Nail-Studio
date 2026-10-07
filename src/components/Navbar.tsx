@@ -6,7 +6,6 @@ import {
   Calendar, 
   Menu, 
   X, 
-  Sparkles, 
   Instagram, 
   User, 
   ShieldCheck, 

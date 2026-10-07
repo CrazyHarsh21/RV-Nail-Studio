@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Sparkles, MessageCircle, Calendar, ArrowUpRight, Award, ShieldCheck, Home } from 'lucide-react';
+import { Sparkles, MessageCircle, Calendar, ArrowUpRight, Home } from 'lucide-react';
 import { HERO_IMAGE, ARTIST_IMAGE, getWhatsAppUrl, handleImageFallback } from '../data/nailData';
 
 interface HeroProps {

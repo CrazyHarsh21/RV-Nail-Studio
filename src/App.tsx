@@ -25,9 +25,15 @@ import { AdminDashboard } from './components/AdminDashboard';
 import { AuthModal } from './components/AuthModal';
 import { UserBookingsModal } from './components/UserBookingsModal';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { subscribeToAppointments, getUserBookedIds, getGuestBookedIds } from './lib/firebase';
+import { 
+  subscribeToAppointments, 
+  getUserBookedIds, 
+  getUserBookedCodes,
+  getGuestBookedIds, 
+  getGuestBookedCodes 
+} from './lib/firebase';
 import { Appointment, NailDesign } from './types';
-import { ShieldCheck, Calendar } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 
 function SalonAppContent() {
   const { user, isAdmin } = useAuth();
@@ -60,25 +66,50 @@ function SalonAppContent() {
 
   // Strict user isolation: user only sees their own appointment count
   const userBookedIds = useMemo(() => (user?.uid ? getUserBookedIds(user.uid) : []), [user?.uid]);
+  const userBookedCodes = useMemo(() => {
+    if (!user?.uid) return [];
+    try {
+      const byUid: string[] = getUserBookedCodes(user.uid);
+      const byEmail: string[] = user.email ? getUserBookedCodes(user.email) : [];
+      return Array.from(new Set([...byUid, ...byEmail]));
+    } catch {
+      return [];
+    }
+  }, [user?.uid, user?.email]);
   const guestBookedIds = useMemo(() => (!user ? getGuestBookedIds() : []), [user]);
+  const guestBookedCodes = useMemo(() => (!user ? getGuestBookedCodes() : []), [user]);
   const userEmailClean = user?.email?.toLowerCase().trim() || '';
+  const userPhoneClean = (user as any)?.phoneNumber ? (user as any).phoneNumber.replace(/\D/g, '').slice(-10) : '';
 
   const userAppointmentsCount = useMemo(() => {
     if (user?.uid) {
       return appointments.filter((apt) => {
-        if (apt.userId && apt.userId !== user.uid) return false;
-        if (apt.userId === user.uid) return true;
+        if (apt.userId && apt.userId === user.uid) return true;
         if (userEmailClean && apt.email && apt.email.toLowerCase().trim() === userEmailClean) return true;
-        if (userBookedIds.includes(apt.id)) return true;
+        const aptPhoneClean = apt.phone ? apt.phone.replace(/\D/g, '').slice(-10) : '';
+        if (userPhoneClean && aptPhoneClean && (userPhoneClean.endsWith(aptPhoneClean) || aptPhoneClean.endsWith(userPhoneClean))) return true;
+        if (userBookedIds.includes(apt.id) || (apt.bookingCode && (userBookedCodes.includes(apt.bookingCode) || userBookedIds.includes(apt.bookingCode)))) return true;
         return false;
       }).length;
     } else {
+      const lastPhone = localStorage.getItem('rv_client_last_phone') || '';
+      const lastEmail = localStorage.getItem('rv_client_last_email') || '';
+
       return appointments.filter((apt) => {
-        if (apt.userId) return false;
-        return guestBookedIds.includes(apt.id);
+        if (guestBookedIds.includes(apt.id) || (apt.bookingCode && guestBookedCodes.includes(apt.bookingCode))) {
+          return true;
+        }
+        const aptPhoneClean = apt.phone ? apt.phone.replace(/\D/g, '').slice(-10) : '';
+        if (lastPhone && aptPhoneClean && aptPhoneClean.endsWith(lastPhone.slice(-10))) {
+          return true;
+        }
+        if (lastEmail && apt.email && apt.email.toLowerCase().trim() === lastEmail.toLowerCase().trim()) {
+          return true;
+        }
+        return false;
       }).length;
     }
-  }, [appointments, user, userEmailClean, userBookedIds, guestBookedIds]);
+  }, [appointments, user, userEmailClean, userPhoneClean, userBookedIds, userBookedCodes, guestBookedIds, guestBookedCodes]);
 
   const handleOpenBooking = (
     service?: string,

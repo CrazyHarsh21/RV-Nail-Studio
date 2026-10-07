@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   X, 
@@ -21,11 +21,13 @@ import {
 } from 'lucide-react';
 import { Appointment } from '../types';
 import { useAuth } from '../context/AuthContext';
-import { getWhatsAppUrl } from '../data/nailData';
+import { getWhatsAppUrl, getCustomerToAdminWhatsAppUrl, BRAND_PHONE, BRAND_ADDRESS } from '../data/nailData';
 import { 
   getGuestBookedIds, 
   getGuestBookedCodes, 
   getUserBookedIds, 
+  getUserBookedCodes,
+  linkAppointmentsToUser,
   fetchUserPastBookingsFromFirestore 
 } from '../lib/firebase';
 
@@ -52,12 +54,23 @@ export const UserBookingsModal: React.FC<UserBookingsModalProps> = ({
   const [syncNotice, setSyncNotice] = useState<string | null>(null);
 
   const userEmailClean = user?.email?.toLowerCase().trim() || '';
-  const userPhoneClean = (user as any)?.phoneNumber ? (user as any).phoneNumber.replace(/\D/g, '') : '';
+  const userPhoneClean = (user as any)?.phoneNumber ? (user as any).phoneNumber.replace(/\D/g, '').slice(-10) : '';
 
   // Retrieve user-specific or guest-specific booking keys
   const userBookedIds = useMemo(() => {
     return user?.uid ? getUserBookedIds(user.uid) : [];
   }, [user?.uid]);
+
+  const userBookedCodes = useMemo(() => {
+    if (!user?.uid) return [];
+    try {
+      const byUid: string[] = getUserBookedCodes(user.uid);
+      const byEmail: string[] = user.email ? getUserBookedCodes(user.email) : [];
+      return Array.from(new Set([...byUid, ...byEmail]));
+    } catch {
+      return [];
+    }
+  }, [user?.uid, user?.email]);
 
   const guestBookedIds = useMemo(() => {
     return !user ? getGuestBookedIds() : [];
@@ -67,53 +80,69 @@ export const UserBookingsModal: React.FC<UserBookingsModalProps> = ({
     return !user ? getGuestBookedCodes() : [];
   }, [user]);
 
+  // When modal opens, sync and link any pending bookings for logged in user
+  useEffect(() => {
+    if (isOpen && user?.uid) {
+      linkAppointmentsToUser(user).catch(() => {});
+      fetchUserPastBookingsFromFirestore(user.uid, user.email || undefined, (user as any).phoneNumber || undefined).catch(() => {});
+    }
+  }, [isOpen, user]);
+
   /**
-   * STRICT DATA PRIVACY FILTER:
-   * - If a user is logged in: ONLY their own bookings are returned (never other users' bookings).
-   * - If no user is logged in (guest): ONLY bookings created during this guest session are returned.
+   * RELIABLE PERSISTENT USER BOOKING FILTER:
+   * Returns bookings that belong to this user via:
+   * 1. Direct UID match
+   * 2. Verified Account Email match
+   * 3. Verified Phone Number match
+   * 4. Stored booking codes or appointment IDs
+   * If logged out: returns bookings made on this device so history is never erased.
    */
   const userAppointments = useMemo(() => {
     if (user?.uid) {
       return appointments.filter((apt) => {
-        // STRICT RULE 1: Never show an appointment explicitly owned by another user ID
-        if (apt.userId && apt.userId !== user.uid) {
-          return false;
-        }
-
-        // STRICT RULE 2: Show if matching current user ID
-        if (apt.userId === user.uid) {
+        // 1. Match current user ID
+        if (apt.userId && apt.userId === user.uid) {
           return true;
         }
 
-        // STRICT RULE 3: Show if matching verified account email
+        // 2. Match verified account email
         if (userEmailClean && apt.email && apt.email.toLowerCase().trim() === userEmailClean) {
           return true;
         }
 
-        // STRICT RULE 4: Show if matching user's phone
-        const aptPhoneClean = apt.phone ? apt.phone.replace(/\D/g, '') : '';
+        // 3. Match user phone
+        const aptPhoneClean = apt.phone ? apt.phone.replace(/\D/g, '').slice(-10) : '';
         if (userPhoneClean && aptPhoneClean && (aptPhoneClean.endsWith(userPhoneClean) || userPhoneClean.endsWith(aptPhoneClean))) {
           return true;
         }
 
-        // STRICT RULE 5: Show if in this user's isolated local list
-        if (userBookedIds.includes(apt.id)) {
+        // 4. Match local user booking codes or IDs
+        if (userBookedIds.includes(apt.id) || (apt.bookingCode && (userBookedCodes.includes(apt.bookingCode) || userBookedIds.includes(apt.bookingCode)))) {
           return true;
         }
 
         return false;
       });
     } else {
-      // Guest session: only unassigned bookings made on this device
+      // Guest session or logged-out: show bookings on this device
+      const lastPhone = localStorage.getItem('rv_client_last_phone') || '';
+      const lastEmail = localStorage.getItem('rv_client_last_email') || '';
+
       return appointments.filter((apt) => {
-        // Never show any registered user's appointments to a guest!
-        if (apt.userId) {
-          return false;
+        if (guestBookedIds.includes(apt.id) || (apt.bookingCode && guestBookedCodes.includes(apt.bookingCode))) {
+          return true;
         }
-        return guestBookedIds.includes(apt.id) || (apt.bookingCode && guestBookedCodes.includes(apt.bookingCode));
+        const aptPhoneClean = apt.phone ? apt.phone.replace(/\D/g, '').slice(-10) : '';
+        if (lastPhone && aptPhoneClean && aptPhoneClean.endsWith(lastPhone.slice(-10))) {
+          return true;
+        }
+        if (lastEmail && apt.email && apt.email.toLowerCase().trim() === lastEmail.toLowerCase().trim()) {
+          return true;
+        }
+        return false;
       });
     }
-  }, [appointments, user, userEmailClean, userPhoneClean, userBookedIds, guestBookedIds, guestBookedCodes]);
+  }, [appointments, user, userEmailClean, userPhoneClean, userBookedIds, userBookedCodes, guestBookedIds, guestBookedCodes]);
 
   // Sync from Cloud Database on request
   const handleCloudSync = async () => {
@@ -124,7 +153,8 @@ export const UserBookingsModal: React.FC<UserBookingsModalProps> = ({
     }
     try {
       setIsSyncing(true);
-      const results = await fetchUserPastBookingsFromFirestore(user.uid, user.email || undefined);
+      await linkAppointmentsToUser(user);
+      const results = await fetchUserPastBookingsFromFirestore(user.uid, user.email || undefined, (user as any).phoneNumber || undefined);
       setSyncNotice(`Synced ${results.length} bookings successfully from Studio Database.`);
       setTimeout(() => setSyncNotice(null), 3500);
     } catch {
@@ -527,7 +557,7 @@ export const UserBookingsModal: React.FC<UserBookingsModalProps> = ({
                       </p>
                     ) : (
                       <p className="text-[#78716C] text-[11px] pl-5">
-                        Studio Location: Sector 18, Commercial Belt, Noida, UP (Studio visit with Rohit)
+                        Studio Location: {BRAND_ADDRESS}
                       </p>
                     )}
                   </div>
@@ -552,15 +582,16 @@ export const UserBookingsModal: React.FC<UserBookingsModalProps> = ({
                       Booked on: {new Date(apt.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <a
-                        href={getWhatsAppUrl(`Hi Rohit, inquiring about my booking ${apt.bookingCode} for ${apt.date} at ${apt.timeSlot}. Name: ${apt.fullName}.`)}
+                        href={apt.status === 'pending' ? getCustomerToAdminWhatsAppUrl(apt) : getWhatsAppUrl(`Hi Rohit, inquiring about my booking ${apt.bookingCode} for ${apt.date} at ${apt.timeSlot}. Name: ${apt.fullName}.`)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#25D366] text-white text-xs font-bold hover:bg-[#20bd5a] transition-all shadow-xs"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#25D366] text-white text-xs font-bold hover:bg-[#20bd5a] transition-all shadow-xs cursor-pointer"
+                        title={apt.status === 'pending' ? "Send full booking details to Rohit on WhatsApp" : "Chat with Rohit on WhatsApp"}
                       >
                         <MessageCircle className="w-3.5 h-3.5 fill-current" />
-                        <span>Chat on WhatsApp</span>
+                        <span>{apt.status === 'pending' ? `WhatsApp Par Rohit Ko Msg Bhejein (+91 ${BRAND_PHONE})` : 'Chat with Rohit'}</span>
                       </a>
                     </div>
                   </div>

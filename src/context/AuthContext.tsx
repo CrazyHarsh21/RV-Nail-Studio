@@ -80,7 +80,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
         await linkAppointmentsToUser(currentUser);
         await fetchUserPastBookingsFromFirestore(currentUser.uid, currentUser.email || undefined);
+        try {
+          localStorage.setItem('rv_client_active_session', JSON.stringify({
+            uid: currentUser.uid,
+            email: currentUser.email,
+            displayName: currentUser.displayName,
+            phoneNumber: currentUser.phoneNumber,
+            photoURL: currentUser.photoURL
+          }));
+        } catch {
+          // ignore
+        }
       } else if (isSubscribed) {
+        // Fallback: check if client was logged in via Firestore DB credentials or phone session
+        try {
+          const stored = localStorage.getItem('rv_client_active_session');
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            if (parsed && parsed.uid) {
+              const restoredUser = {
+                uid: parsed.uid,
+                email: parsed.email || '',
+                displayName: parsed.displayName || 'Client',
+                phoneNumber: parsed.phoneNumber || null,
+                photoURL: parsed.photoURL || null,
+                emailVerified: false,
+                isAnonymous: false,
+                metadata: {},
+                providerData: [],
+                refreshToken: '',
+                tenantId: null,
+                delete: async () => {},
+                getIdToken: async () => '',
+                getIdTokenResult: async () => ({} as any),
+                reload: async () => {},
+                toJSON: () => ({})
+              } as unknown as User;
+
+              setUser(restoredUser);
+              setIsAdmin(false);
+              linkAppointmentsToUser(restoredUser).catch(() => {});
+              if (isSubscribed) setLoading(false);
+              return;
+            }
+          }
+        } catch {
+          // ignore
+        }
+
         setUser(null);
         setIsAdmin(false);
       }
@@ -105,7 +152,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     // 1. If administrator email, route through verified admin credential checker
-    if (normalizedEmail === PRIMARY_ADMIN_EMAIL.toLowerCase() || normalizedEmail === 'rohit@rvnailstudio.com') {
+    if (
+      normalizedEmail === PRIMARY_ADMIN_EMAIL.toLowerCase() ||
+      normalizedEmail === 'nailartstudio486@gmail.com' ||
+      normalizedEmail === 'harshksltc1221@gmail.com' ||
+      normalizedEmail === 'rohit@rvnailstudio.com'
+    ) {
       await loginAsAdminWithCredentials(normalizedEmail, cleanPass);
       return;
     }
@@ -120,6 +172,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (adminCheck) {
         await ensureAdminRecord(currentUser);
       }
+      try {
+        localStorage.setItem('rv_client_active_session', JSON.stringify({
+          uid: currentUser.uid,
+          email: currentUser.email,
+          displayName: currentUser.displayName,
+          phoneNumber: currentUser.phoneNumber,
+          photoURL: currentUser.photoURL
+        }));
+        localStorage.setItem('rv_client_last_email', normalizedEmail);
+      } catch {
+        // ignore
+      }
       await linkAppointmentsToUser(currentUser);
       await fetchUserPastBookingsFromFirestore(currentUser.uid, currentUser.email || undefined);
       return;
@@ -129,6 +193,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (dbClientUser) {
         setUser(dbClientUser);
         setIsAdmin(false);
+        try {
+          localStorage.setItem('rv_client_active_session', JSON.stringify({
+            uid: dbClientUser.uid,
+            email: dbClientUser.email,
+            displayName: dbClientUser.displayName,
+            phoneNumber: (dbClientUser as any).phoneNumber || null
+          }));
+          localStorage.setItem('rv_client_last_email', normalizedEmail);
+        } catch {
+          // ignore
+        }
         await linkAppointmentsToUser(dbClientUser);
         await fetchUserPastBookingsFromFirestore(dbClientUser.uid, normalizedEmail);
         return;
@@ -175,6 +250,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       setUser(authUser);
       setIsAdmin(false);
+      try {
+        localStorage.setItem('rv_client_active_session', JSON.stringify({
+          uid: authUser.uid,
+          email: authUser.email,
+          displayName: name.trim() || authUser.displayName,
+          phoneNumber: phone?.trim() || authUser.phoneNumber
+        }));
+        localStorage.setItem('rv_client_last_email', normalizedEmail);
+      } catch {
+        // ignore
+      }
       await linkAppointmentsToUser(authUser);
       await fetchUserPastBookingsFromFirestore(authUser.uid, authUser.email || undefined);
     } catch (authErr: any) {
@@ -214,6 +300,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         setUser(clientSession);
         setIsAdmin(false);
+        try {
+          localStorage.setItem('rv_client_active_session', JSON.stringify({
+            uid,
+            email: normalizedEmail,
+            displayName: name.trim(),
+            phoneNumber: phone?.trim() || null
+          }));
+          localStorage.setItem('rv_client_last_email', normalizedEmail);
+        } catch {
+          // ignore
+        }
         await linkAppointmentsToUser(clientSession);
         await fetchUserPastBookingsFromFirestore(uid, normalizedEmail);
         return;
@@ -249,7 +346,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   };
 
-  // Mobile OTP Verification (Strictly validates against generated code - NO bypass)
+  // Mobile OTP Verification - Authenticates user into state and persistent session
   const loginWithPhoneOtp = async (phone: string, otp: string, name?: string) => {
     const sanitizedPhone = phone.replace(/\D/g, '').slice(-10);
     const session = otpStore.get(sanitizedPhone);
@@ -265,8 +362,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Consume OTP so it cannot be reused
     otpStore.delete(sanitizedPhone);
 
-    // Save client info locally for this phone session
+    const uid = `phone_${sanitizedPhone}`;
+    const phoneClientUser = {
+      uid,
+      phoneNumber: `+91${sanitizedPhone}`,
+      email: `${sanitizedPhone}@rvclient.in`,
+      displayName: name?.trim() || `Client (+91 ${sanitizedPhone})`,
+      emailVerified: true,
+      isAnonymous: false,
+      metadata: {},
+      providerData: [],
+      refreshToken: '',
+      tenantId: null,
+      delete: async () => {},
+      getIdToken: async () => '',
+      getIdTokenResult: async () => ({} as any),
+      reload: async () => {},
+      toJSON: () => ({})
+    } as unknown as User;
+
+    setUser(phoneClientUser);
+    setIsAdmin(false);
+
     try {
+      localStorage.setItem('rv_client_active_session', JSON.stringify({
+        uid,
+        phoneNumber: `+91${sanitizedPhone}`,
+        email: `${sanitizedPhone}@rvclient.in`,
+        displayName: name?.trim() || `Client (+91 ${sanitizedPhone})`
+      }));
       localStorage.setItem('rv_client_last_phone', sanitizedPhone);
       if (name) {
         localStorage.setItem('rv_client_last_name', name.trim());
@@ -274,6 +398,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch {
       // ignore
     }
+
+    await saveUserProfileToFirestore({
+      uid,
+      phone: sanitizedPhone,
+      displayName: name?.trim() || `Client (+91 ${sanitizedPhone})`,
+      role: 'client',
+      authProvider: 'phone-otp',
+      lastLoginAt: new Date().toISOString()
+    });
+
+    await linkAppointmentsToUser(phoneClientUser);
+    await fetchUserPastBookingsFromFirestore(phoneClientUser.uid, undefined, sanitizedPhone);
   };
 
   const resetPasswordWithOtp = async (phone: string, otp: string, _newPass: string) => {
@@ -365,6 +501,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await ensureAdminRecord(currentUser);
       }
 
+      try {
+        localStorage.setItem('rv_client_active_session', JSON.stringify({
+          uid: currentUser.uid,
+          email: currentUser.email,
+          displayName: currentUser.displayName,
+          phoneNumber: currentUser.phoneNumber,
+          photoURL: currentUser.photoURL
+        }));
+        if (currentUser.email) {
+          localStorage.setItem('rv_client_last_email', currentUser.email.toLowerCase().trim());
+        }
+      } catch {
+        // ignore
+      }
+
       await saveUserProfileToFirestore({
         uid: currentUser.uid,
         email: currentUser.email,
@@ -385,7 +536,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
-    await signOut(auth);
+    try {
+      await signOut(auth);
+    } catch {
+      // ignore
+    }
+    try {
+      localStorage.removeItem('rv_client_active_session');
+    } catch {
+      // ignore
+    }
     setUser(null);
     setIsAdmin(false);
   };

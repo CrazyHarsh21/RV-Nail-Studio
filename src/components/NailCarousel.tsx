@@ -7,7 +7,6 @@ import {
   Layers,
   Play,
   Pause,
-  Sparkles,
   Calendar,
   Zap
 } from 'lucide-react';

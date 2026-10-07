@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Sparkles, Eye, ArrowRight, Info, RotateCw, Check, Calendar } from 'lucide-react';
+import { Sparkles, ArrowRight, Info, RotateCw, Check, Calendar } from 'lucide-react';
 import { NAIL_DESIGNS, handleImageFallback } from '../data/nailData';
 import { NailDesign } from '../types';
 

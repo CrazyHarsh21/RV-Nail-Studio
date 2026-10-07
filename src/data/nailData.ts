@@ -13,6 +13,122 @@ export function getWhatsAppUrl(customMessage?: string): string {
   return `https://wa.me/${BRAND_PHONE_INTL}?text=${encodeURIComponent(message)}`;
 }
 
+export interface BookingDetailsForWhatsApp {
+  bookingCode?: string;
+  fullName: string;
+  phone: string;
+  email?: string;
+  date: string;
+  timeSlot: string;
+  service: string;
+  nailDesign?: string;
+  serviceType: string;
+  address?: string;
+  notes?: string;
+  amount?: number;
+  createdAt?: string;
+}
+
+export function formatAdminBookingWhatsAppMessage(booking: BookingDetailsForWhatsApp): string {
+  const code = booking.bookingCode || 'NEW-BOOKING';
+  const cleanPhone = booking.phone.replace(/\D/g, '').replace(/^91/, '');
+  const nowStr = new Date().toLocaleString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
+
+  return [
+    `🔔 *NEW APPOINTMENT BOOKING ALERT!*`,
+    `✨ *RV NAILS ART by Rohit*`,
+    ``,
+    `Website se nayi appointment booking aayi hai:`,
+    ``,
+    `📋 *CUSTOMER & BOOKING DETAILS:*`,
+    `━━━━━━━━━━━━━━━━━━━━`,
+    `🆔 *Booking Code:* ${code}`,
+    `👤 *Client Name:* ${booking.fullName}`,
+    `📞 *Client Phone:* +91 ${cleanPhone}`,
+    booking.email ? `📧 *Client Email:* ${booking.email}` : null,
+    `📅 *Booking Date:* ${booking.date}`,
+    `⏰ *Time Slot:* ${booking.timeSlot}`,
+    `💅 *Service:* ${booking.service}`,
+    booking.nailDesign ? `🎨 *Selected Design:* ${booking.nailDesign}` : `🎨 *Design:* Custom / Discuss at Studio`,
+    `🏠 *Service Type:* ${booking.serviceType}`,
+    booking.address ? `📍 *Doorstep Address:* ${booking.address}` : null,
+    booking.notes ? `📝 *Client Notes:* ${booking.notes}` : null,
+    booking.amount ? `💰 *Estimated Total:* ₹${booking.amount.toLocaleString()}` : null,
+    `📌 *Status:* ⏳ Pending Admin Confirmation`,
+    `🕒 *Booked At:* ${nowStr}`,
+    `━━━━━━━━━━━━━━━━━━━━`,
+    `👉 *Reply to client on WhatsApp directly:* https://wa.me/91${cleanPhone}?text=${encodeURIComponent(`Hi ${booking.fullName}, this is Rohit from RV Nails Art! Regarding your booking ${code} on ${booking.date} at ${booking.timeSlot}...`)}`,
+  ]
+    .filter(Boolean)
+    .join('\n');
+}
+
+export function getAdminBookingWhatsAppUrl(booking: BookingDetailsForWhatsApp): string {
+  const message = formatAdminBookingWhatsAppMessage(booking);
+  return `https://wa.me/${BRAND_PHONE_INTL}?text=${encodeURIComponent(message)}`;
+}
+
+export function formatCustomerToAdminWhatsAppMessage(booking: BookingDetailsForWhatsApp): string {
+  const code = booking.bookingCode || 'RV-BOOKING';
+  const cleanPhone = booking.phone.replace(/\D/g, '').replace(/^91/, '');
+  const nowStr = new Date().toLocaleString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
+
+  return [
+    `💅 *RV NAILS ART BY ROHIT - APPOINTMENT BOOKING* 💅`,
+    ``,
+    `Hello Rohit, maine website se appointment request book ki hai. Please meri booking confirm karein:`,
+    ``,
+    `📋 *APPOINTMENT DETAILS:*`,
+    `━━━━━━━━━━━━━━━━━━━━━━━━`,
+    `🆔 *Booking Code:* ${code}`,
+    `👤 *Client Name:* ${booking.fullName}`,
+    `📞 *Client Phone:* +91 ${cleanPhone}`,
+    booking.email ? `📧 *Client Email:* ${booking.email}` : null,
+    `📅 *Booking Date:* ${booking.date}`,
+    `⏰ *Time Slot:* ${booking.timeSlot}`,
+    `💅 *Service:* ${booking.service}`,
+    booking.nailDesign ? `🎨 *Selected Design:* ${booking.nailDesign}` : `🎨 *Design:* Custom Nail Art`,
+    `🏠 *Service Type:* ${booking.serviceType}`,
+    booking.address ? `📍 *Doorstep Address:* ${booking.address}` : null,
+    booking.notes ? `📝 *Client Notes:* ${booking.notes}` : null,
+    booking.amount ? `💰 *Estimated Total:* ₹${booking.amount.toLocaleString()}` : null,
+    `🕒 *Booked At:* ${nowStr}`,
+    `━━━━━━━━━━━━━━━━━━━━━━━━`,
+    `Please check karke confirm karein. Thank you! 🙏`
+  ]
+    .filter(Boolean)
+    .join('\n');
+}
+
+export function getCustomerToAdminWhatsAppUrl(booking: BookingDetailsForWhatsApp): string {
+  const message = formatCustomerToAdminWhatsAppMessage(booking);
+  return `https://wa.me/${BRAND_PHONE_INTL}?text=${encodeURIComponent(message)}`;
+}
+
+export function getClientWhatsAppUrl(clientPhone: string, customMessage?: string): string {
+  const cleanPhone = clientPhone.replace(/\D/g, '').replace(/^91/, '');
+  const targetPhone = `91${cleanPhone}`;
+  const defaultMsg = 'Hi, this is Rohit from RV Nails Art regarding your booking.';
+  const message = customMessage || defaultMsg;
+  return `https://wa.me/${targetPhone}?text=${encodeURIComponent(message)}`;
+}
+
 /**
  * Universal image error handler: automatically falls back to .jpg if .webp fails
  */
@@ -28,8 +144,7 @@ export function handleImageFallback(e: React.SyntheticEvent<HTMLImageElement, Ev
 }
 
 export const HERO_IMAGE = './images/aesthetic_hero_nails_1789826243580.webp';
-export const ARTIST_IMAGE = './images/rohit_artist_portrait_1789826210402.webp';
-export const ARTIST_CRAFTING_IMAGE = './images/rohit_artist_portrait_1789826210402.webp';
+export const ARTIST_IMAGE = './images/RV_Nails_Studio_896x1200.webp';
 
 export const NAIL_DESIGNS: NailDesign[] = [
   {

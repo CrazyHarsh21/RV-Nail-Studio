@@ -19,7 +19,7 @@ export const ArtistSection: React.FC<ArtistSectionProps> = ({ onOpenBooking }) =
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
           
-          {/* Left Column: Authentic Portrait in sculpted frame */}
+          {/* Left Column: Authentic Portrait / Showcase in sculpted frame */}
           <motion.div
             initial={{ opacity: 0, x: -40 }}
             whileInView={{ opacity: 1, x: 0 }}

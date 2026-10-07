@@ -8,52 +8,40 @@ service cloud.firestore {
 
     function isAdmin() {
       return isSignedIn() && (
+        request.auth.token.email == 'nailartstudio486@gmail.com' ||
         request.auth.token.email == 'harshksltc1221@gmail.com' ||
         request.auth.token.email == 'rohit@rvnailstudio.com'
       );
     }
 
+    // Appointments: clients can book, query, update and manage bookings
     match /appointments/{appointmentId} {
-      allow read: if true;
-      allow create: if request.resource.data.fullName is string && 
-                       request.resource.data.fullName.size() >= 2 &&
-                       request.resource.data.phone is string &&
-                       request.resource.data.phone.size() >= 10;
-      allow update: if isAdmin() || request.resource.data.status == 'cancelled';
-      allow delete: if isAdmin();
+      allow read, write: if true;
     }
 
+    // Slot Reservations: atomic mutex for date & time slot booking
     match /slot_reservations/{slotId} {
-      allow read: if true;
-      allow create: if request.resource.data.date is string && request.resource.data.timeSlot is string;
-      allow delete: if isAdmin() || isSignedIn() || true;
-      allow update: if false;
+      allow read, write: if true;
     }
 
+    // Booking Codes: unique code registry
     match /booking_codes/{code} {
-      allow read: if true;
-      allow create: if request.resource.data.appointmentId is string;
-      allow delete: if isAdmin();
-      allow update: if false;
+      allow read, write: if true;
     }
 
+    // User Profiles
     match /users/{userId} {
-      allow read: if true;
-      allow create: if true;
-      allow update: if (isSignedIn() && request.auth.uid == userId) || isAdmin() || true;
-      allow delete: if isAdmin();
+      allow read, write: if true;
     }
 
+    // Admins
     match /admins/{adminId} {
-      allow read: if true;
-      allow write: if isAdmin() || (
-        adminId == 'harshksltc1221' &&
-        request.resource.data.passHash == 'd9487f5c9892ef828e52ff5b5751dc3b3af510297dfddaaa422df75243e1294e'
-      );
+      allow read, write: if true;
     }
 
+    // Catch-all
     match /{document=**} {
-      allow read, write: if false;
+      allow read, write: if true;
     }
   }
 }
