@@ -1,0 +1,6 @@
+# Robots.txt for RV Nail Studio
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://rvnailstudio.vercel.app/sitemap.xml

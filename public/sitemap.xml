@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <url>
+    <loc>https://rvnailstudio.vercel.app/</loc>
+    <lastmod>2026-10-08</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://rvnailstudio.vercel.app/images/aesthetic_hero_nails_1789826243580.webp</image:loc>
+      <image:title>RV Nail Studio by Rohit - Luxury Nail Art &amp; Extensions</image:title>
+      <image:caption>Bespoke sculpted nails, chrome glazes, and bridal nail couture in Laxmi Nagar, Delhi</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://rvnailstudio.vercel.app/images/RV_Nails_Studio_896x1200.webp</image:loc>
+      <image:title>Rohit - Master Nail Artist &amp; Founder</image:title>
+      <image:caption>Founder and master nail technician providing doorstep nail service in Delhi NCR</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://rvnailstudio.vercel.app/images/rainbow_chrome_nails_1789822991773.webp</image:loc>
+      <image:title>Rainbow Chrome Glaze Nails</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://rvnailstudio.vercel.app/images/multicolor_nail_set_1789822976547.webp</image:loc>
+      <image:title>Prism Multiverse Sculpted Nails</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://rvnailstudio.vercel.app/images/nail_glitter_elegance_1789820636074.webp</image:loc>
+      <image:title>Rose Gold Glitter Ombre Gel Extensions</image:title>
+    </image:image>
+  </url>
+</urlset>

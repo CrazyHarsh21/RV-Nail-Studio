@@ -124,13 +124,19 @@ function SalonAppContent() {
     const allKnownIds = new Set<string>([...userBookedIds, ...guestBookedIds]);
     const allKnownCodes = new Set<string>([...userBookedCodes, ...guestBookedCodes]);
 
-    return appointments.filter((apt) => {
+    const localStore = getAllLocalStoredAppointments();
+    const map = new Map<string, Appointment>();
+    for (const a of localStore) map.set(a.id, a);
+    for (const a of appointments) map.set(a.id, a);
+    const combined = Array.from(map.values());
+
+    return combined.filter((apt) => {
       if (user?.uid && apt.userId && apt.userId === user.uid) return true;
       const aptEmailClean = apt.email ? apt.email.toLowerCase().trim() : '';
       if (userEmailClean && aptEmailClean && aptEmailClean === userEmailClean) return true;
       if (lastEmail && aptEmailClean && aptEmailClean === lastEmail) return true;
       const aptPhoneClean = apt.phone ? apt.phone.replace(/\D/g, '').slice(-10) : '';
-      if (userPhoneClean && aptPhoneClean && (userPhoneClean.endsWith(aptPhoneClean) || userPhoneClean.endsWith(aptPhoneClean))) return true;
+      if (userPhoneClean && aptPhoneClean && (aptPhoneClean.endsWith(userPhoneClean) || userPhoneClean.endsWith(aptPhoneClean))) return true;
       if (lastPhone && aptPhoneClean && (aptPhoneClean.endsWith(lastPhone) || lastPhone.endsWith(aptPhoneClean))) return true;
       if (allKnownIds.has(apt.id) || (apt.bookingCode && allKnownCodes.has(apt.bookingCode))) return true;
       return false;

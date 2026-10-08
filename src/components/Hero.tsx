@@ -246,6 +246,9 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking }) => {
                 <img
                   src={ARTIST_IMAGE}
                   alt="Rohit - Founder & Master Artist"
+                  width="36"
+                  height="36"
+                  loading="eager"
                   referrerPolicy="no-referrer"
                   onError={handleImageFallback}
                   className="w-9 h-9 rounded-full object-cover object-top border-2 border-[#D4AF37]"

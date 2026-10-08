@@ -135,7 +135,13 @@ export const UserBookingsModal: React.FC<UserBookingsModalProps> = ({
       ...guestBookedCodes,
     ]);
 
-    return appointments.filter((apt) => {
+    const localStore = getAllLocalStoredAppointments();
+    const map = new Map<string, Appointment>();
+    for (const a of localStore) map.set(a.id, a);
+    for (const a of appointments) map.set(a.id, a);
+    const combined = Array.from(map.values());
+
+    return combined.filter((apt) => {
       // 1. Match current user ID
       if (user?.uid && apt.userId && apt.userId === user.uid) {
         return true;
